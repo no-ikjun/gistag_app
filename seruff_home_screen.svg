@@ -1,0 +1,122 @@
+<svg width="393" height="852" viewBox="0 0 393 852" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#101828" flood-opacity="0.08"/>
+    </filter>
+    <linearGradient id="heroGrad" x1="26" y1="116" x2="367" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF4B3F"/>
+      <stop offset="1" stop-color="#FF8D7E"/>
+    </linearGradient>
+    <linearGradient id="softGrad" x1="26" y1="318" x2="367" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF6F4"/>
+      <stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+    <style>
+      .kr { font-family: "Apple SD Gothic Neo", "Pretendard", "Inter", sans-serif; }
+      .bold { font-weight: 700; }
+      .semibold { font-weight: 600; }
+      .regular { font-weight: 400; }
+      .tiny { font-size: 10px; }
+      .small { font-size: 12px; }
+      .body { font-size: 14px; }
+      .title { font-size: 18px; }
+      .headline { font-size: 24px; }
+    </style>
+  </defs>
+
+  <rect width="393" height="852" rx="36" fill="#F5F5F5"/>
+
+  <g class="kr">
+    <text x="28" y="28" fill="#111827" class="small semibold">9:41</text>
+    <rect x="316" y="19" width="18" height="8" rx="2" fill="#111827"/>
+    <rect x="338" y="19" width="14" height="8" rx="2" fill="#111827"/>
+    <rect x="356" y="18" width="24" height="10" rx="3" stroke="#111827" stroke-width="1.4"/>
+    <rect x="380" y="21" width="2" height="4" rx="1" fill="#111827"/>
+    <rect x="358" y="20" width="18" height="6" rx="2" fill="#111827"/>
+
+    <g transform="translate(24 50)">
+      <circle cx="18" cy="18" r="18" fill="#FF4B3F"/>
+      <path d="M18 8C12.5 8 8 12.5 8 18s4.5 10 10 10c3.2 0 6-1.5 7.8-3.8l-5.6-3.4c-.6.5-1.3.8-2.2.8-2 0-3.6-1.6-3.6-3.6s1.6-3.6 3.6-3.6c1.4 0 2.6.8 3.2 2h6.5C26.8 11.6 22.8 8 18 8Z" fill="white"/>
+      <text x="48" y="16" fill="#FF3B30" class="title bold">Gistag</text>
+      <text x="48" y="34" fill="#6B7280" class="tiny regular">운동 태그로 시작하는 오늘의 루틴</text>
+    </g>
+    <circle cx="347" cy="68" r="18" fill="#FFFFFF" filter="url(#softShadow)"/>
+    <path d="M347 58c-5 0-8 3.5-8 8.2v3.6l-2 3.2h20l-2-3.2v-3.6c0-4.7-3-8.2-8-8.2Z" stroke="#111827" stroke-width="1.5" stroke-linejoin="round"/>
+    <circle cx="354" cy="59" r="4" fill="#FF4B3F"/>
+
+    <rect x="24" y="111" width="345" height="183" rx="24" fill="url(#heroGrad)" filter="url(#softShadow)"/>
+    <text x="48" y="148" fill="#FFFFFF" class="small semibold">TODAY'S START</text>
+    <text x="48" y="183" fill="#FFFFFF" class="headline bold">화려한, 운동을</text>
+    <text x="48" y="214" fill="#FFFFFF" class="headline bold">시작해볼까요?</text>
+    <text x="48" y="243" fill="#FFE9E6" class="body regular">최근 관심 태그를 바탕으로</text>
+    <text x="48" y="263" fill="#FFE9E6" class="body regular">12분 스타터 루틴을 준비했어요.</text>
+    <circle cx="301" cy="187" r="46" fill="#FFFFFF" fill-opacity="0.18"/>
+    <circle cx="301" cy="187" r="29" fill="#FFFFFF" fill-opacity="0.24"/>
+    <path d="M288 187c0-7.2 5.8-13 13-13s13 5.8 13 13-5.8 13-13 13-13-5.8-13-13Z" fill="white"/>
+    <path d="M296 181l13 7-13 7v-14Z" fill="#FF4B3F"/>
+
+    <rect x="48" y="313" width="142" height="48" rx="16" fill="#111827"/>
+    <text x="84" y="342" fill="#FFFFFF" class="body semibold">빠른 시작</text>
+    <circle cx="68" cy="337" r="10" fill="#FF4B3F"/>
+    <path d="M65 332l8 5-8 5v-10Z" fill="white"/>
+    <rect x="204" y="313" width="141" height="48" rx="16" fill="#FFFFFF" stroke="#F2D1CC"/>
+    <text x="238" y="342" fill="#FF4B3F" class="body semibold">태그로 찾기</text>
+    <path d="M225 331h-6l-6 6 6 6h6l6-6-6-6Z" stroke="#FF4B3F" stroke-width="1.6"/>
+    <circle cx="224" cy="337" r="1.8" fill="#FF4B3F"/>
+
+    <text x="24" y="404" fill="#111827" class="title bold">오늘의 추천 루틴</text>
+    <text x="298" y="404" fill="#FF4B3F" class="small semibold">전체보기</text>
+
+    <rect x="24" y="423" width="345" height="128" rx="22" fill="url(#softGrad)" stroke="#F4DCD8"/>
+    <rect x="44" y="445" width="82" height="82" rx="18" fill="#FFF1EE"/>
+    <path d="M76 475c-7.5 0-13.5 6-13.5 13.5S68.5 502 76 502c5 0 9.4-2.7 11.7-6.8l-7-4.2c-1 1.2-2.6 2-4.7 2-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5c1.9 0 3.5 1.1 4.2 2.6h8.7C88 480 82.5 475 76 475Z" fill="#FF4B3F"/>
+    <text x="145" y="457" fill="#6B7280" class="small semibold">12분 · 초급</text>
+    <text x="145" y="481" fill="#111827" class="title bold">전신 워밍업 루틴</text>
+    <text x="145" y="506" fill="#6B7280" class="small regular">어깨 · 코어 · 하체를 가볍게 깨워요</text>
+    <rect x="145" y="523" width="82" height="8" rx="4" fill="#FFE1DC"/>
+    <rect x="145" y="523" width="55" height="8" rx="4" fill="#FF4B3F"/>
+    <text x="244" y="531" fill="#6B7280" class="tiny semibold">67% 매칭</text>
+
+    <text x="24" y="590" fill="#111827" class="title bold">내 진행도</text>
+    <rect x="24" y="610" width="160" height="110" rx="22" fill="#FFFFFF" filter="url(#softShadow)"/>
+    <text x="44" y="638" fill="#6B7280" class="small semibold">이번 주 운동</text>
+    <text x="44" y="681" fill="#111827" class="headline bold">4일</text>
+    <text x="92" y="681" fill="#FF4B3F" class="small semibold">+2일</text>
+    <rect x="44" y="699" width="120" height="7" rx="3.5" fill="#F3F4F6"/>
+    <rect x="44" y="699" width="84" height="7" rx="3.5" fill="#FF4B3F"/>
+
+    <rect x="209" y="610" width="160" height="110" rx="22" fill="#FFFFFF" filter="url(#softShadow)"/>
+    <text x="229" y="638" fill="#6B7280" class="small semibold">획득 XP</text>
+    <text x="229" y="681" fill="#111827" class="headline bold">820</text>
+    <circle cx="333" cy="657" r="22" fill="#FFF4D7"/>
+    <path d="M333 644l4 8 9 1-6.5 6.2 1.5 8.8-8-4.2-8 4.2 1.5-8.8-6.5-6.2 9-1 4-8Z" fill="#F59E0B"/>
+
+    <text x="24" y="758" fill="#111827" class="title bold">관심 태그</text>
+    <rect x="24" y="774" width="72" height="34" rx="17" fill="#111827"/>
+    <text x="48" y="796" fill="#FFFFFF" class="small semibold">근력</text>
+    <rect x="104" y="774" width="72" height="34" rx="17" fill="#FFFFFF" stroke="#E5E7EB"/>
+    <text x="128" y="796" fill="#6B7280" class="small semibold">유산소</text>
+    <rect x="184" y="774" width="86" height="34" rx="17" fill="#FFFFFF" stroke="#E5E7EB"/>
+    <text x="209" y="796" fill="#6B7280" class="small semibold">스트레칭</text>
+    <rect x="278" y="774" width="72" height="34" rx="17" fill="#FFFFFF" stroke="#E5E7EB"/>
+    <text x="302" y="796" fill="#6B7280" class="small semibold">코어</text>
+
+    <rect x="0" y="780" width="393" height="72" fill="#FFFFFF"/>
+    <line x1="0" y1="780" x2="393" y2="780" stroke="#EFEFEF"/>
+    <g fill="#FF4B3F">
+      <path d="M42 811l14-12 14 12v18H60v-11h-8v11H42v-18Z"/>
+    </g>
+    <text x="42" y="840" fill="#FF4B3F" class="tiny semibold">홈</text>
+    <circle cx="132" cy="813" r="11" stroke="#D1D5DB" stroke-width="2"/>
+    <path d="M140 821l9 9" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round"/>
+    <text x="123" y="840" fill="#9CA3AF" class="tiny semibold">탐색</text>
+    <circle cx="197" cy="806" r="26" fill="#FF4B3F" filter="url(#softShadow)"/>
+    <path d="M197 794v24M185 806h24" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M267 804h24v22h-24z" stroke="#D1D5DB" stroke-width="2" rx="4"/>
+    <path d="M272 799h14" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round"/>
+    <text x="266" y="840" fill="#9CA3AF" class="tiny semibold">루틴</text>
+    <circle cx="341" cy="809" r="11" stroke="#D1D5DB" stroke-width="2"/>
+    <path d="M322 829c3-9 10-13 19-13s16 4 19 13" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round"/>
+    <text x="329" y="840" fill="#9CA3AF" class="tiny semibold">마이</text>
+  </g>
+</svg>

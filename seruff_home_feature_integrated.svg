@@ -1,0 +1,127 @@
+<svg width="402" height="874" viewBox="0 0 402 874" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="cardShadow" x="-16%" y="-16%" width="132%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="9" flood-color="#111111" flood-opacity="0.08"/>
+    </filter>
+    <filter id="nfcShadow" x="-45%" y="-45%" width="190%" height="190%">
+      <feDropShadow dx="0" dy="0" stdDeviation="14" flood-color="#FF4A3D" flood-opacity="0.28"/>
+    </filter>
+    <linearGradient id="recordGradient" x1="25" y1="302" x2="377" y2="432" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#FFF1EF"/>
+    </linearGradient>
+    <linearGradient id="nfcGradient" x1="150" y1="670" x2="252" y2="772" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF4A3D"/>
+      <stop offset="1" stop-color="#F0281D"/>
+    </linearGradient>
+    <style>
+      .font { font-family: "Apple SD Gothic Neo", "Pretendard", "Inter", sans-serif; }
+      .b { font-weight: 700; }
+      .sb { font-weight: 600; }
+      .m { font-weight: 500; }
+      .r { font-weight: 400; }
+      .t10 { font-size: 10px; }
+      .t11 { font-size: 11px; }
+      .t12 { font-size: 12px; }
+      .t13 { font-size: 13px; }
+      .t14 { font-size: 14px; }
+      .t16 { font-size: 16px; }
+      .t18 { font-size: 18px; }
+      .t22 { font-size: 22px; }
+      .t24 { font-size: 24px; }
+      .t28 { font-size: 28px; }
+    </style>
+  </defs>
+
+  <rect width="402" height="874" fill="#FFFAFA"/>
+  <g class="font">
+    <text x="56" y="38" fill="#000000" class="t16 sb">9:41</text>
+    <rect x="289" y="30" width="4" height="10" rx="2" fill="#000"/>
+    <rect x="296" y="26" width="4" height="14" rx="2" fill="#000"/>
+    <rect x="303" y="22" width="4" height="18" rx="2" fill="#000"/>
+    <path d="M316 29c5-4 11-4 16 0M319 33c3-2 7-2 10 0M323 37h2" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+    <rect x="342" y="27" width="23" height="12" rx="3" stroke="#000" stroke-width="1.2"/>
+    <rect x="365" y="31" width="2" height="4" rx="1" fill="#000"/>
+    <rect x="344" y="29" width="17" height="8" rx="2" fill="#000"/>
+
+    <g transform="translate(25 82)">
+      <circle cx="24" cy="24" r="24" fill="#F0281D"/>
+      <path d="M24 11c-7.2 0-13 5.8-13 13s5.8 13 13 13c4.6 0 8.6-2.4 10.9-6l-7.2-4.3c-.8 1-2.1 1.7-3.7 1.7-2.5 0-4.5-2-4.5-4.4 0-2.5 2-4.5 4.5-4.5 1.9 0 3.5 1.1 4.2 2.8h8.4C35.8 15.9 30.5 11 24 11Z" fill="#fff"/>
+      <text x="58" y="33" fill="#F0281D" class="t28 b">Gistag</text>
+    </g>
+    <path d="M352 86c-6.2 0-10 4.3-10 10.1v4.8l-2.8 4.7h25.6l-2.8-4.7v-4.8c0-5.8-3.8-10.1-10-10.1Z" stroke="#8B9098" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M348 109c1 2.1 2.2 3.1 4 3.1s3-1 4-3.1" stroke="#8B9098" stroke-width="2.4" stroke-linecap="round"/>
+
+    <text x="25" y="162" fill="#111111" class="t24 b">최익준님, 오늘도 태그할까요?</text>
+    <text x="25" y="191" fill="#5B5F66" class="t16 m">기록은 쌓이고, 루틴은 더 가벼워져요</text>
+
+    <g filter="url(#cardShadow)">
+      <rect x="24" y="222" width="108" height="48" rx="24" fill="#FFFFFF"/>
+      <text x="42" y="253" fill="#111111" class="t16 sb">💪 Lv. 2</text>
+      <rect x="141" y="222" width="116" height="48" rx="24" fill="#FFFFFF"/>
+      <text x="159" y="253" fill="#111111" class="t16 sb">🔥 연속 8일</text>
+      <rect x="266" y="222" width="112" height="48" rx="24" fill="#FFFFFF"/>
+      <text x="285" y="253" fill="#111111" class="t16 sb">⚡ 820 XP</text>
+    </g>
+
+    <text x="25" y="313" fill="#111111" class="t18 b">최근 나의 기록</text>
+    <text x="325" y="313" fill="#FF4A3D" class="t12 sb">더보기</text>
+    <g filter="url(#cardShadow)">
+      <rect x="25" y="330" width="352" height="128" rx="20" fill="url(#recordGradient)"/>
+      <rect x="45" y="350" width="66" height="66" rx="14" fill="#FFF1EF"/>
+      <path d="M72 381c-3.8 0-6.8 3-6.8 6.8s3 6.8 6.8 6.8h17.6c3.8 0 6.8-3 6.8-6.8s-3-6.8-6.8-6.8H72Z" fill="#FF4A3D"/>
+      <rect x="54" y="366" width="13" height="36" rx="6.5" fill="#F0281D"/>
+      <rect x="92" y="366" width="13" height="36" rx="6.5" fill="#F0281D"/>
+      <text x="129" y="358" fill="#8B9098" class="t12 m">어제 · 제 2학생회관</text>
+      <text x="129" y="385" fill="#111111" class="t18 b">하체 근력 루틴</text>
+      <text x="129" y="410" fill="#5B5F66" class="t13 m">38분 · 6세트 · +120 XP</text>
+      <rect x="129" y="428" width="164" height="8" rx="4" fill="#FFE0DC"/>
+      <rect x="129" y="428" width="118" height="8" rx="4" fill="#FF4A3D"/>
+      <text x="306" y="435" fill="#8B9098" class="t11 sb">72%</text>
+    </g>
+
+    <text x="25" y="501" fill="#111111" class="t18 b">내 주변 운동 장소</text>
+    <text x="318" y="501" fill="#FF4A3D" class="t12 sb">지도보기</text>
+    <g filter="url(#cardShadow)">
+      <rect x="25" y="518" width="258" height="108" rx="18" fill="#FFFFFF"/>
+      <rect x="43" y="536" width="62" height="62" rx="12" fill="#FFEDEA"/>
+      <path d="M74 552c-13 0-23 10.5-23 23.3 0 9.4 5.6 17.6 13.5 21.2l6.2-11.4c-3.9-1.4-6.6-5.1-6.6-9.5 0-5.6 4.4-10.1 9.9-10.1 4.5 0 8.3 3 9.5 7.1h13.1C95.2 560.9 85.6 552 74 552Z" fill="#FF4A3D"/>
+      <text x="122" y="548" fill="#8B9098" class="t11 m">러닝 · 250m</text>
+      <text x="122" y="573" fill="#111111" class="t16 b">GIST 기숙사 A동</text>
+      <text x="122" y="596" fill="#5B5F66" class="t12 m">5km 코스 · 30분 추천</text>
+      <rect x="122" y="606" width="58" height="20" rx="10" fill="#FFF1EF"/>
+      <text x="137" y="620" fill="#FF4A3D" class="t10 sb">NFC 있음</text>
+    </g>
+    <g filter="url(#cardShadow)">
+      <rect x="297" y="518" width="258" height="108" rx="18" fill="#FFFFFF"/>
+      <rect x="315" y="536" width="62" height="62" rx="12" fill="#F5F5F5"/>
+      <path d="M330 572h32M334 558v28M358 558v28" stroke="#111111" stroke-width="7" stroke-linecap="round"/>
+      <text x="394" y="548" fill="#8B9098" class="t11 m">근력 · 200m</text>
+      <text x="394" y="573" fill="#111111" class="t16 b">제 2학생회관 헬스장</text>
+      <text x="394" y="596" fill="#5B5F66" class="t12 m">상체 루틴 · 45분 추천</text>
+    </g>
+    <circle cx="184" cy="644" r="3.5" fill="#FFCBC4"/>
+    <circle cx="196" cy="644" r="3.5" fill="#FFCBC4"/>
+    <rect x="208" y="640.5" width="18" height="7" rx="3.5" fill="#FF4A3D"/>
+
+    <g filter="url(#nfcShadow)">
+      <circle cx="201" cy="716" r="55" fill="url(#nfcGradient)"/>
+      <circle cx="201" cy="716" r="8" fill="#FFFFFF"/>
+      <path d="M184 697c-5 5.3-8 11.8-8 19s3 13.7 8 19M218 697c5 5.3 8 11.8 8 19s-3 13.7-8 19" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+      <path d="M192 706c-2.4 2.8-3.8 6.2-3.8 10s1.4 7.2 3.8 10M210 706c2.4 2.8 3.8 6.2 3.8 10s-1.4 7.2-3.8 10" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+    </g>
+    <text x="153" y="788" fill="#111111" class="t14 sb">NFC 태그 시작</text>
+
+    <rect x="0" y="790" width="402" height="84" fill="#FFFFFF"/>
+    <line x1="0" y1="790" x2="402" y2="790" stroke="#EBE5E5"/>
+    <path d="M63 806l14 11v19H49v-19l14-11Z" fill="#FF4A3D"/>
+    <text x="57" y="852" fill="#FF4A3D" class="t12 sb">홈</text>
+    <circle cx="201" cy="820" r="13" fill="#FFCBC4"/>
+    <path d="M194 828c4-8 10-8 14 0" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <text x="189" y="852" fill="#FFCBC4" class="t12 sb">랭킹</text>
+    <rect x="327" y="807" width="24" height="29" rx="7" fill="#FFCBC4"/>
+    <path d="M333 815h12M333 823h12" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <text x="327" y="852" fill="#FFCBC4" class="t12 sb">기록</text>
+    <rect x="132" y="861" width="138" height="5" rx="2.5" fill="#000000"/>
+  </g>
+</svg>
