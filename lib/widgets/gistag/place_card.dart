@@ -61,11 +61,11 @@ class PlaceCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF8B9098),
-                          fontSize: 11,
-                          height: 1.25,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      color: const Color(0xFF8B9098),
+                      fontSize: 11,
+                      height: 1.25,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -73,11 +73,11 @@ class PlaceCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontSize: 15,
-                          height: 1.25,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF111111),
-                        ),
+                      fontSize: 15,
+                      height: 1.25,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF111111),
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -85,17 +85,15 @@ class PlaceCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF5B5F66),
-                          fontSize: 12,
-                          height: 1.3,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      color: const Color(0xFF5B5F66),
+                      fontSize: 12,
+                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   if (showNfcChip) ...[
                     const SizedBox(height: 4),
-                    _NfcChip(
-                      label: 'NFC 있음',
-                    ),
+                    _NfcChip(label: 'NFC 있음'),
                   ],
                 ],
               ),
@@ -120,9 +118,7 @@ class _Thumb extends StatelessWidget {
       width: 60,
       height: 60,
       decoration: BoxDecoration(
-        color: isRun
-            ? const Color(0xFFFFE5E2)
-            : const Color(0xFFF5F1F1),
+        color: isRun ? const Color(0xFFFFE5E2) : const Color(0xFFF5F1F1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(
@@ -150,10 +146,10 @@ class _NfcChip extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: GistagColors.primary,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-            ),
+          color: GistagColors.primary,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

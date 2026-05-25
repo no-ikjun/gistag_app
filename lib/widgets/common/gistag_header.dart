@@ -63,8 +63,7 @@ class GistagHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showBack =
-        automaticallyImplyBack && canNavigateBack(context);
+    final showBack = automaticallyImplyBack && canNavigateBack(context);
 
     return SizedBox(
       height: barHeight,
@@ -83,8 +82,9 @@ class GistagHeader extends StatelessWidget {
             ],
             Expanded(
               child: Align(
-                alignment:
-                    centerTitle ? Alignment.center : Alignment.centerLeft,
+                alignment: centerTitle
+                    ? Alignment.center
+                    : Alignment.centerLeft,
                 child: center ?? const SizedBox.shrink(),
               ),
             ),
@@ -125,13 +125,7 @@ class _HeaderIconButton extends StatelessWidget {
         child: SizedBox(
           width: 48,
           height: 48,
-          child: Center(
-            child: SvgPicture.asset(
-              asset,
-              width: 35,
-              height: 35,
-            ),
-          ),
+          child: Center(child: SvgPicture.asset(asset, width: 35, height: 35)),
         ),
       ),
     );

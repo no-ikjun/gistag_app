@@ -34,16 +34,16 @@ class GistagButton extends StatelessWidget {
     final buttonStyle = theme.elevatedButtonTheme.style;
 
     final enabledBg =
-        backgroundColor ?? buttonStyle?.backgroundColor?.resolve(const {}) ?? theme.colorScheme.primary;
-    final disabledBg = buttonStyle?.backgroundColor?.resolve(
-          const {WidgetState.disabled},
-        ) ??
+        backgroundColor ??
+        buttonStyle?.backgroundColor?.resolve(const {}) ??
+        theme.colorScheme.primary;
+    final disabledBg =
+        buttonStyle?.backgroundColor?.resolve(const {WidgetState.disabled}) ??
         enabledBg.withValues(alpha: 0.45);
 
     final enabledFg = foregroundColor;
-    final disabledFg = buttonStyle?.foregroundColor?.resolve(
-          const {WidgetState.disabled},
-        ) ??
+    final disabledFg =
+        buttonStyle?.foregroundColor?.resolve(const {WidgetState.disabled}) ??
         enabledFg.withValues(alpha: 0.9);
 
     return SizedBox(
