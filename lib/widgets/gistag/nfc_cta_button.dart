@@ -37,7 +37,9 @@ class NfcCtaButton extends StatelessWidget {
               Icon(
                 Icons.sensors_rounded,
                 color: Colors.white,
-                size: showLabel ? 52 : 58,
+                size: showLabel
+                    ? 52
+                    : (size * 0.42).clamp(24.0, 34.0),
               ),
               if (showLabel) ...[
                 const SizedBox(height: 10),

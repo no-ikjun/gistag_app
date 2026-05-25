@@ -6,6 +6,7 @@ import '../app/app_theme.dart';
 import '../models/gistag_models.dart';
 import '../providers/app_providers.dart';
 import '../widgets/common/app_logo.dart';
+import '../widgets/common/gistag_header.dart';
 import '../widgets/common/gistag_pressable.dart';
 import '../widgets/gistag/nfc_cta_button.dart';
 import '../widgets/gistag/place_card.dart';
@@ -28,8 +29,7 @@ class HomeScreen extends ConsumerWidget {
         final snapshot = home.snapshot;
         final places = snapshot.recommendedPlaces;
         final recentRecord = home.records.isNotEmpty ? home.records.first : null;
-        const footerHeight = 72.0;
-        const nfcDockHeight = 190.0;
+        const nfcDockHeight = 96.0;
 
         return SafeArea(
           child: Stack(
@@ -39,7 +39,7 @@ class HomeScreen extends ConsumerWidget {
                   onRefresh: ref.read(homeControllerProvider.notifier).refresh,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(24, 14, 24, 24).copyWith(
-                      bottom: 24 + footerHeight + nfcDockHeight,
+                      bottom: 16 + nfcDockHeight,
                     ),
                     children: [
                       _HomeHeader(userName: home.user.name),
@@ -81,7 +81,10 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       _PlacesCarousel(places: places),
                       const SizedBox(height: 12),
-                      const _CarouselDots(activeIndex: 2, total: 4),
+                      _CarouselDots(
+                        activeIndex: 0,
+                        total: places.isEmpty ? 1 : places.length,
+                      ),
                     ],
                   ),
                 ),
@@ -89,7 +92,7 @@ class HomeScreen extends ConsumerWidget {
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: footerHeight,
+                bottom: 0,
                 child: _HomeBottomDock(
                   onTap: () => _openNfcScan(context),
                   height: nfcDockHeight,
@@ -143,16 +146,9 @@ class _HomeHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const AppLogo(width: 112),
-            const Spacer(),
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.notifications_none_rounded, size: 28),
-              color: const Color(0xFF8B9098),
-            ),
-          ],
+        GistagHeader(
+          center: const AppLogo(width: 112),
+          onBellTap: () {},
         ),
         const SizedBox(height: 10),
         Text(
@@ -178,24 +174,30 @@ class _HomeBottomDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: SizedBox(
-        height: height,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                GistagColors.background.withValues(alpha: 0.0),
-                GistagColors.background.withValues(alpha: 0.92),
-                GistagColors.background,
-              ],
+    return SizedBox(
+      height: height,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.0, 0.35, 1.0],
+                  colors: [
+                    GistagColors.background.withValues(alpha: 0.0),
+                    GistagColors.background.withValues(alpha: 0.65),
+                    GistagColors.background,
+                  ],
+                ),
+              ),
             ),
           ),
-          child: _NfcFloatingCta(onTap: onTap),
-        ),
+          _NfcFloatingCta(onTap: onTap),
+        ],
       ),
     );
   }
@@ -383,119 +385,132 @@ class _RecentRecordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          height: 132,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: GistagColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: GistagColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
-          padding: const EdgeInsets.fromLTRB(20, 18, 18, 18),
-          child: Row(
-            children: [
-              Container(
-                width: 62,
-                height: 62,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFE5E2),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.fitness_center_rounded,
-                  color: GistagColors.primary,
-                  size: 34,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
+        ],
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 5,
+              color: GistagColors.primary,
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      _formatWhen(record.startedAt, record.placeName),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF8B9098),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFE5E2),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.fitness_center_rounded,
+                        color: GistagColors.primary,
+                        size: 28,
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      record.workoutType,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontSize: 18,
-                            color: const Color(0xFF111111),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _formatWhen(record.startedAt, record.placeName),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: const Color(0xFF8B9098),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${record.duration.inMinutes}분 · +${record.earnedXp} XP',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF5B5F66),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(height: 4),
+                          Text(
+                            record.workoutType,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontSize: 17,
+                                  height: 1.25,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF111111),
+                                ),
                           ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: 0.72,
-                              minHeight: 8,
-                              backgroundColor: const Color(0xFFFFE5E2),
-                              color: GistagColors.primary,
-                            ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '${record.duration.inMinutes}분 · +${record.earnedXp} XP',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: const Color(0xFF5B5F66),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '72%',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: const Color(0xFF8B9098),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: 0.72,
+                                    minHeight: 8,
+                                    backgroundColor: const Color(0xFFFFE5E2),
+                                    color: GistagColors.primary,
                                   ),
-                        ),
-                      ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                '72%',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFF8B9098),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-        Positioned(
-          left: 0,
-          top: 0,
-          bottom: 0,
-          child: Container(
-            width: 5,
-            decoration: const BoxDecoration(
-              color: GistagColors.primary,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(18),
-                bottomLeft: Radius.circular(18),
-              ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -586,10 +601,11 @@ class _PlacesCarousel extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 116,
+      height: 124,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 0, right: 0),
+        clipBehavior: Clip.none,
+        padding: EdgeInsets.zero,
         itemBuilder: (context, index) {
           final place = places[index];
           return PlaceCard(place: place, onTap: () {});
@@ -633,46 +649,40 @@ class _NfcFloatingCta extends StatelessWidget {
 
   final VoidCallback onTap;
 
+  /// 탭바 바로 위에 붙지 않게 여유 (피그마 홈 인디케이터 구간과 비슷한 간격).
+  static const double _bottomInset = 10;
+
+  /// 지름 — 너무 크면 본문을 덮어 보이고, 너무 작으면 탭 대비 비율이 어색함.
+  static const double _buttonSize = 68;
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        const SizedBox(height: 10),
-        Container(
-          width: 112,
-          height: 112,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.65),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Center(
-            child: NfcCtaButton(
-              onTap: onTap,
-              size: 102,
-              showLabel: false,
-              hapticsEnabled: true,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: _bottomInset),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: GistagColors.primary.withValues(alpha: 0.28),
+              blurRadius: 14,
+              spreadRadius: 0,
+              offset: const Offset(0, 6),
             ),
-          ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        Text(
-          'NFC 태그 시작',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF111111),
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
+        child: NfcCtaButton(
+          onTap: onTap,
+          size: _buttonSize,
+          showLabel: false,
+          hapticsEnabled: true,
         ),
-        const SizedBox(height: 8),
-      ],
+      ),
     );
   }
 }
