@@ -2,6 +2,27 @@
 
 A new Flutter project.
 
+## Auth environment
+
+Create a local `.env` from `.env.example`. The app loads it at startup with
+`flutter_dotenv`, so `flutter run` is enough for local development.
+
+Required keys:
+
+- `GISTAG_API_BASE_URL`
+- `GISTAG_IDP_AUTHORIZE_URL` (`https://api.account.gistory.me/oauth/authorize`)
+- `GISTAG_IDP_CLIENT_ID`
+- `GISTAG_IDP_REDIRECT_URI`
+
+The default mobile redirect URI is `gistag://oauth/callback`. Android and iOS
+are currently configured for `gistag://oauth/callback`.
+
+For mobile development, keep using:
+
+```sh
+GISTAG_IDP_REDIRECT_URI=gistag://oauth/callback
+```
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
