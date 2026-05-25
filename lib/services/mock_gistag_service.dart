@@ -29,52 +29,11 @@ class MockGistagService implements GistagService {
   ];
 
   @override
-  Future<void> initialize() async {
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-  }
-
-  @override
-  Future<GistagUser> loginWithKakao() async {
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    _user = const GistagUser(
-      name: '최익준',
-      level: 4,
-      xp: 1280,
-      streakDays: 7,
-      onboardingCompleted: false,
-    );
-    return _user!;
-  }
-
-  @override
-  Future<GistagUser> saveOnboarding(OnboardingProfile profile) async {
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    final nextUser =
-        (_user ??
-                const GistagUser(
-                  name: '최익준',
-                  level: 4,
-                  xp: 1280,
-                  streakDays: 7,
-                  onboardingCompleted: false,
-                ))
-            .copyWith(onboardingCompleted: true);
-    _user = nextUser;
-    return nextUser;
-  }
-
-  @override
   Future<HomeSnapshot> loadHome() async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     final user =
         _user ??
-        const GistagUser(
-          name: '최익준',
-          level: 4,
-          xp: 1280,
-          streakDays: 7,
-          onboardingCompleted: true,
-        );
+        const GistagUser(name: '최익준', level: 4, xp: 1280, streakDays: 7);
     _user = user;
     return HomeSnapshot(
       user: user,
@@ -104,7 +63,9 @@ class MockGistagService implements GistagService {
   Future<WorkoutResult> endWorkout(WorkoutSession session) async {
     await Future<void>.delayed(const Duration(milliseconds: 500));
     final duration = DateTime.now().difference(session.startedAt);
-    final current = _user!;
+    final current =
+        _user ??
+        const GistagUser(name: '최익준', level: 4, xp: 1280, streakDays: 7);
     const earnedXp = 80;
     final totalXp = current.xp + earnedXp;
     final leveledUp = totalXp >= 1320;
@@ -161,13 +122,7 @@ class MockGistagService implements GistagService {
     await Future<void>.delayed(const Duration(milliseconds: 250));
     final me =
         _user ??
-        const GistagUser(
-          name: '최익준',
-          level: 4,
-          xp: 1280,
-          streakDays: 7,
-          onboardingCompleted: true,
-        );
+        const GistagUser(name: '최익준', level: 4, xp: 1280, streakDays: 7);
     return [
       const RankingUser(
         rank: 1,
