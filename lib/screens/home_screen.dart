@@ -47,7 +47,10 @@ class HomeScreen extends ConsumerWidget {
                       24,
                     ).copyWith(bottom: 16 + nfcDockHeight),
                     children: [
-                      _HomeHeader(userName: home.user.name),
+                      _HomeHeader(
+                        userName: home.user.name,
+                        onSettingsTap: () => context.push('/settings'),
+                      ),
                       const SizedBox(height: 14),
                       Text(
                         '오늘은 GIST 주변 루틴을 가볍게 추천해드릴게요',
@@ -142,16 +145,36 @@ class _HomeError extends StatelessWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.userName});
+  const _HomeHeader({required this.userName, required this.onSettingsTap});
 
   final String userName;
+  final VoidCallback onSettingsTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GistagHeader(center: const AppLogo(width: 112), onBellTap: () {}),
+        GistagHeader(
+          center: const AppLogo(width: 112),
+          trailing: Semantics(
+            button: true,
+            label: '설정',
+            child: GistagPressable(
+              onTap: onSettingsTap,
+              borderRadius: BorderRadius.circular(12),
+              child: const SizedBox(
+                width: 48,
+                height: 48,
+                child: Icon(
+                  Icons.settings_rounded,
+                  color: GistagColors.text,
+                  size: 27,
+                ),
+              ),
+            ),
+          ),
+        ),
         const SizedBox(height: 10),
         Text(
           '$userName님, 운동을 시작해볼까요?',
