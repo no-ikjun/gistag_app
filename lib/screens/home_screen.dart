@@ -42,7 +42,7 @@ class HomeScreen extends ConsumerWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(
                       24,
-                      14,
+                      10,
                       24,
                       24,
                     ).copyWith(bottom: 16 + nfcDockHeight),
@@ -156,20 +156,20 @@ class _HomeHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GistagHeader(
-          center: const AppLogo(width: 112),
+          center: const AppLogo(width: 104),
           trailing: Semantics(
             button: true,
             label: '설정',
             child: GistagPressable(
               onTap: onSettingsTap,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               child: const SizedBox(
-                width: 48,
-                height: 48,
+                width: 40,
+                height: 40,
                 child: Icon(
                   Icons.settings_rounded,
                   color: GistagColors.text,
-                  size: 27,
+                  size: 23,
                 ),
               ),
             ),
