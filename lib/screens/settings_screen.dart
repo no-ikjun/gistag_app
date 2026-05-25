@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../app/app_theme.dart';
 import '../providers/app_providers.dart';
+import '../widgets/common/gistag_dialog.dart';
 import '../widgets/common/gistag_header.dart';
 import '../widgets/common/gistag_pressable.dart';
 
@@ -90,28 +91,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _confirmLogout() async {
     if (_isLoggingOut) return;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGistagConfirmDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('로그아웃할까요?'),
-          content: const Text('현재 기기에서 로그아웃하고 저장된 인증 정보를 삭제합니다.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: GistagColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('로그아웃'),
-            ),
-          ],
-        );
-      },
+      title: '로그아웃할까요?',
+      message: '현재 기기에서 로그아웃하고 저장된 인증 정보를 삭제합니다.',
+      icon: Icons.logout_rounded,
+      confirmLabel: '로그아웃',
+      destructive: true,
+      showCloseButton: false,
     );
 
     if (confirmed != true) return;
