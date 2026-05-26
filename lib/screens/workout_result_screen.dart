@@ -6,12 +6,28 @@ import '../app/app_theme.dart';
 import '../models/gistag_models.dart';
 import '../providers/app_providers.dart';
 import '../widgets/common/gistag_button.dart';
+import '../widgets/common/gistag_fixed_bottom_actions.dart';
 
-class WorkoutResultScreen extends ConsumerWidget {
+class WorkoutResultScreen extends ConsumerStatefulWidget {
   const WorkoutResultScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WorkoutResultScreen> createState() =>
+      _WorkoutResultScreenState();
+}
+
+class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
+  void _goHome({int tabIndex = 0}) {
+    final router = GoRouter.of(context);
+    ref.read(selectedHomeTabProvider.notifier).state = tabIndex;
+    if (!mounted) {
+      return;
+    }
+    router.go('/home');
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final result = ref.watch(workoutControllerProvider).value?.lastResult;
 
     if (result == null) {
@@ -33,15 +49,13 @@ class WorkoutResultScreen extends ConsumerWidget {
                     '운동 결과가 없어요',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => context.go('/home'),
-                    child: const Text('홈으로 돌아가기'),
-                  ),
                 ],
               ),
             ),
           ),
+        ),
+        bottomNavigationBar: GistagFixedBottomActions(
+          children: [GistagButton(label: '홈으로 돌아가기', onPressed: _goHome)],
         ),
       );
     }
@@ -49,33 +63,27 @@ class WorkoutResultScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
           children: [
             _ResultHero(result: result),
             const SizedBox(height: 18),
             _RewardCard(result: result),
             const SizedBox(height: 18),
             _PlaceResultCard(result: result),
-            const SizedBox(height: 28),
-            GistagButton(
-              label: '홈으로 돌아가기',
-              onPressed: () {
-                ref.read(selectedHomeTabProvider.notifier).state = 0;
-                context.go('/home');
-              },
-            ),
-            const SizedBox(height: 10),
-            GistagButton(
-              label: '내 기록 보기',
-              onPressed: () {
-                ref.read(selectedHomeTabProvider.notifier).state = 2;
-                context.go('/home');
-              },
-              backgroundColor: Colors.white,
-              foregroundColor: GistagColors.text,
-            ),
           ],
         ),
+      ),
+      bottomNavigationBar: GistagFixedBottomActions(
+        children: [
+          GistagButton(label: '홈으로 돌아가기', onPressed: _goHome),
+          const SizedBox(height: 10),
+          GistagButton(
+            label: '내 기록 보기',
+            onPressed: () => _goHome(tabIndex: 2),
+            backgroundColor: Colors.white,
+            foregroundColor: GistagColors.text,
+          ),
+        ],
       ),
     );
   }

@@ -40,7 +40,14 @@ class _HomeShellScreenState extends ConsumerState<HomeShellScreen>
   }
 
   Future<void> _refreshAndRestore() async {
+    if (!mounted) {
+      return;
+    }
+    final router = GoRouter.of(context);
     await ref.read(homeControllerProvider.notifier).refresh();
+    if (!mounted) {
+      return;
+    }
     await ref.read(workoutControllerProvider.notifier).restoreActiveWorkout();
     if (!mounted) {
       return;
@@ -50,7 +57,7 @@ class _HomeShellScreenState extends ConsumerState<HomeShellScreen>
         .value
         ?.activeSession;
     if (activeSession != null) {
-      context.go('/workout');
+      router.go('/workout');
     }
   }
 

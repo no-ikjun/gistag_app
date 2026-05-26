@@ -8,6 +8,7 @@ import '../models/gistag_models.dart';
 import '../providers/app_providers.dart';
 import '../widgets/common/gistag_button.dart';
 import '../widgets/common/gistag_dialog.dart';
+import '../widgets/common/gistag_fixed_bottom_actions.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   const ActiveWorkoutScreen({super.key});
@@ -42,17 +43,21 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   Future<void> _endWorkout() async {
+    final router = GoRouter.of(context);
     setState(() => _ending = true);
     final result = await ref
         .read(workoutControllerProvider.notifier)
         .endWorkout();
+    if (!mounted) {
+      return;
+    }
     await ref.read(homeControllerProvider.notifier).refresh();
     if (!mounted) {
       return;
     }
     setState(() => _ending = false);
     if (result != null) {
-      context.go('/workout-result');
+      router.go('/workout-result');
     }
   }
 
@@ -70,17 +75,21 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       return;
     }
 
+    final router = GoRouter.of(context);
     setState(() => _cancelling = true);
     final cancelled = await ref
         .read(workoutControllerProvider.notifier)
         .cancelWorkout();
+    if (!mounted) {
+      return;
+    }
     await ref.read(homeControllerProvider.notifier).refresh();
     if (!mounted) {
       return;
     }
     setState(() => _cancelling = false);
     if (cancelled) {
-      context.go('/home');
+      router.go('/home');
     }
   }
 
@@ -100,7 +109,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
+          padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
           children: [
             _WorkoutHeader(session: session),
             const SizedBox(height: 22),
@@ -113,20 +122,23 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               const SizedBox(height: 12),
               const _ErrorNotice(message: '요청에 실패했어요. 최소 운동 시간은 60초입니다.'),
             ],
-            const SizedBox(height: 28),
-            GistagButton(
-              label: _ending ? '종료 중' : '운동 종료',
-              onPressed: _ending || _cancelling ? null : _endWorkout,
-            ),
-            const SizedBox(height: 10),
-            GistagButton(
-              label: _cancelling ? '취소 중' : '기록 없이 취소',
-              onPressed: _ending || _cancelling ? null : _cancelWorkout,
-              backgroundColor: Colors.white,
-              foregroundColor: GistagColors.text,
-            ),
           ],
         ),
+      ),
+      bottomNavigationBar: GistagFixedBottomActions(
+        children: [
+          GistagButton(
+            label: _ending ? '종료 중' : '운동 종료',
+            onPressed: _ending || _cancelling ? null : _endWorkout,
+          ),
+          const SizedBox(height: 10),
+          GistagButton(
+            label: _cancelling ? '취소 중' : '기록 없이 취소',
+            onPressed: _ending || _cancelling ? null : _cancelWorkout,
+            backgroundColor: Colors.white,
+            foregroundColor: GistagColors.text,
+          ),
+        ],
       ),
     );
   }
