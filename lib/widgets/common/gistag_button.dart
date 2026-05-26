@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_theme.dart';
 import 'gistag_pressable.dart';
 
 class GistagButton extends StatelessWidget {
@@ -45,6 +46,17 @@ class GistagButton extends StatelessWidget {
     final disabledFg =
         buttonStyle?.foregroundColor?.resolve(const {WidgetState.disabled}) ??
         enabledFg.withValues(alpha: 0.9);
+    final isWhiteButton =
+        backgroundColor != null &&
+        backgroundColor!.toARGB32() == Colors.white.toARGB32();
+    final whiteButtonBorderColor = Color.lerp(
+      GistagColors.border,
+      GistagColors.primary,
+      onPressed == null ? 0.10 : 0.18,
+    )!;
+    final border = isWhiteButton
+        ? Border.all(color: whiteButtonBorderColor)
+        : null;
 
     return SizedBox(
       width: double.infinity,
@@ -60,6 +72,7 @@ class GistagButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: onPressed == null ? disabledBg : enabledBg,
             borderRadius: BorderRadius.circular(14),
+            border: border,
           ),
           child: DefaultTextStyle.merge(
             style: theme.textTheme.labelLarge?.copyWith(
