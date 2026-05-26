@@ -9,7 +9,6 @@ import '../widgets/common/app_logo.dart';
 import '../widgets/common/gistag_header.dart';
 import '../widgets/common/gistag_pressable.dart';
 import '../widgets/gistag/nearby_places_map_panel.dart';
-import '../widgets/gistag/nfc_cta_button.dart';
 
 const _fallbackNearbyPlaces = [
   Place(
@@ -92,7 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final recentRecord = home.records.isNotEmpty
             ? home.records.first
             : null;
-        const nfcDockHeight = 96.0;
+        const nfcDockHeight = 142.0;
 
         return SafeArea(
           child: Stack(
@@ -177,7 +176,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 right: 0,
                 bottom: 0,
                 child: _HomeBottomDock(
-                  onTap: () => _openNfcScan(context),
+                  onNfcTap: () => _openNfcScan(context),
+                  onMapTap: () => context.push('/places-map'),
+                  onHistoryTap: () =>
+                      ref.read(selectedHomeTabProvider.notifier).state = 2,
                   height: nfcDockHeight,
                 ),
               ),
@@ -283,9 +285,16 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _HomeBottomDock extends StatelessWidget {
-  const _HomeBottomDock({required this.onTap, required this.height});
+  const _HomeBottomDock({
+    required this.onNfcTap,
+    required this.onMapTap,
+    required this.onHistoryTap,
+    required this.height,
+  });
 
-  final VoidCallback onTap;
+  final VoidCallback onNfcTap;
+  final VoidCallback onMapTap;
+  final VoidCallback onHistoryTap;
   final double height;
 
   @override
@@ -302,17 +311,22 @@ class _HomeBottomDock extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.35, 1.0],
+                  stops: const [0.0, 0.28, 0.68, 1.0],
                   colors: [
                     GistagColors.background.withValues(alpha: 0.0),
-                    GistagColors.background.withValues(alpha: 0.65),
+                    GistagColors.background.withValues(alpha: 0.74),
+                    GistagColors.background.withValues(alpha: 0.96),
                     GistagColors.background,
                   ],
                 ),
               ),
             ),
           ),
-          _NfcFloatingCta(onTap: onTap),
+          _WorkoutActionCluster(
+            onNfcTap: onNfcTap,
+            onMapTap: onMapTap,
+            onHistoryTap: onHistoryTap,
+          ),
         ],
       ),
     );
@@ -675,43 +689,124 @@ class _EmptyCard extends StatelessWidget {
   }
 }
 
-class _NfcFloatingCta extends StatelessWidget {
-  const _NfcFloatingCta({required this.onTap});
+class _WorkoutActionCluster extends StatelessWidget {
+  const _WorkoutActionCluster({
+    required this.onNfcTap,
+    required this.onMapTap,
+    required this.onHistoryTap,
+  });
 
-  final VoidCallback onTap;
-
-  /// 탭바 바로 위에 붙지 않게 여유 (피그마 홈 인디케이터 구간과 비슷한 간격).
-  static const double _bottomInset = 10;
-
-  /// 지름 — 너무 크면 본문을 덮어 보이고, 너무 작으면 탭 대비 비율이 어색함.
-  static const double _buttonSize = 68;
+  final VoidCallback onNfcTap;
+  final VoidCallback onMapTap;
+  final VoidCallback onHistoryTap;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: _bottomInset),
-      child: DecoratedBox(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: SizedBox(
+        height: 118,
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _RoundToolButton(
+                  icon: Icons.map_rounded,
+                  label: '지도',
+                  onTap: onMapTap,
+                ),
+                const SizedBox(width: 34),
+                const SizedBox(width: 104),
+                const SizedBox(width: 34),
+                _RoundToolButton(
+                  icon: Icons.history_rounded,
+                  label: '기록',
+                  onTap: onHistoryTap,
+                ),
+              ],
+            ),
+            _PrimaryNfcButton(onTap: onNfcTap),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryNfcButton extends StatelessWidget {
+  const _PrimaryNfcButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GistagPressable(
+      onTap: onTap,
+      hapticsEnabled: true,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 104,
+        height: 104,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
+          color: GistagColors.primary,
           boxShadow: [
             BoxShadow(
-              color: GistagColors.primary.withValues(alpha: 0.28),
-              blurRadius: 14,
-              spreadRadius: 0,
-              offset: const Offset(0, 6),
+              color: GistagColors.primary.withValues(alpha: 0.30),
+              blurRadius: 26,
+              offset: const Offset(0, 14),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
-        child: NfcCtaButton(
-          onTap: onTap,
-          size: _buttonSize,
-          showLabel: false,
-          hapticsEnabled: true,
+        child: const Icon(Icons.sensors_rounded, color: Colors.white, size: 44),
+      ),
+    );
+  }
+}
+
+class _RoundToolButton extends StatelessWidget {
+  const _RoundToolButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GistagPressable(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 62,
+          height: 62,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: GistagColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: GistagColors.text, size: 28),
         ),
       ),
     );
