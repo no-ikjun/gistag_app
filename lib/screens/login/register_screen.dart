@@ -7,6 +7,7 @@ import '../../models/auth_models.dart';
 import '../../providers/app_providers.dart';
 import '../../widgets/common/app_logo.dart';
 import '../../widgets/common/gistag_button.dart';
+import '../../widgets/common/gistag_header.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -52,19 +53,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(28, 42, 28, 28),
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 28),
           children: [
-            Row(
-              children: [
-                IconButton(
-                  onPressed: loading ? null : () => context.go('/login'),
-                  icon: const Icon(Icons.arrow_back_rounded),
-                ),
-                const Spacer(),
-                const AppLogo(width: 112),
-              ],
+            GistagHeader(
+              center: const Align(
+                alignment: Alignment.centerRight,
+                child: AppLogo(width: 104),
+              ),
+              showBellAction: false,
+              automaticallyImplyBack: true,
+              onBackTap: loading ? null : () => context.go('/login'),
             ),
-            const SizedBox(height: 34),
+            const SizedBox(height: 28),
             Text('계정 만들기', style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(

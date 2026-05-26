@@ -7,6 +7,7 @@ import '../../models/auth_models.dart';
 import '../../providers/app_providers.dart';
 import '../../widgets/common/app_logo.dart';
 import '../../widgets/common/gistag_button.dart';
+import '../../widgets/common/gistag_pressable.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -116,18 +117,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            GistagButton(
-              label: loading ? '로그인 중...' : '로그인',
+            _EmailLoginButton(
+              label: loading ? '로그인 중...' : '이메일로 로그인',
               onPressed: loading ? null : _loginWithEmail,
             ),
-            const SizedBox(height: 12),
+            if (authState.hasError) ...[
+              const SizedBox(height: 12),
+              Text(
+                _authErrorMessage(authState.error!),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: GistagColors.primary),
+              ),
+            ],
+            const SizedBox(height: 14),
+            TextButton(
+              onPressed: loading ? null : () => context.go('/register'),
+              style: TextButton.styleFrom(
+                foregroundColor: GistagColors.mutedText,
+                textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: const Text('계정 만들기'),
+            ),
+            const SizedBox(height: 48),
+            const _LoginDivider(label: '간편 로그인'),
+            const SizedBox(height: 18),
             GistagButton(
-              label: '인포팀 계정으로 로그인',
+              label: '인포팀 계정으로 계속하기',
               onPressed: loading || !authConfig.canUseInfoteamLogin
                   ? null
                   : _loginWithInfoteam,
-              backgroundColor: Colors.white,
-              foregroundColor: GistagColors.primary,
               icon: const Icon(Icons.account_circle_rounded, size: 20),
             ),
             if (!authConfig.canUseInfoteamLogin) ...[
@@ -138,19 +159,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: TextStyle(color: GistagColors.mutedText, fontSize: 12),
               ),
             ],
-            if (authState.hasError) ...[
-              const SizedBox(height: 12),
-              Text(
-                _authErrorMessage(authState.error!),
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: GistagColors.primary),
-              ),
-            ],
-            const SizedBox(height: 22),
-            TextButton(
-              onPressed: loading ? null : () => context.go('/register'),
-              child: const Text('계정 만들기'),
-            ),
           ],
         ),
       ),
@@ -201,5 +209,76 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       AuthFlowException(:final message) => message,
       _ => '로그인에 실패했습니다. 다시 시도해주세요.',
     };
+  }
+}
+
+class _EmailLoginButton extends StatelessWidget {
+  const _EmailLoginButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final foreground = enabled ? GistagColors.text : GistagColors.mutedText;
+    final borderColor = enabled ? GistagColors.border : GistagColors.border;
+
+    return SizedBox(
+      width: double.infinity,
+      child: GistagPressable(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          height: 52,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            color: enabled
+                ? GistagColors.surface.withValues(alpha: 0.72)
+                : const Color(0xFFF4EEEE),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor),
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoginDivider extends StatelessWidget {
+  const _LoginDivider({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: Divider(color: GistagColors.border, height: 1)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: GistagColors.mutedText,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const Expanded(child: Divider(color: GistagColors.border, height: 1)),
+      ],
+    );
   }
 }

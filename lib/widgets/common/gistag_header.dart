@@ -61,7 +61,9 @@ class GistagHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showBack = automaticallyImplyBack && canNavigateBack(context);
+    final showBack =
+        automaticallyImplyBack &&
+        (onBackTap != null || canNavigateBack(context));
     final trailingAction =
         trailing ??
         (showBellAction
