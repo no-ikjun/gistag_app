@@ -28,6 +28,12 @@ class Place {
     required this.description,
     required this.workoutType,
     required this.distance,
+    this.imageUrl,
+    this.latitude,
+    this.longitude,
+    this.distanceText,
+    this.estimatedDurationMinutes,
+    this.distanceKm,
   });
 
   final String id;
@@ -35,6 +41,34 @@ class Place {
   final String description;
   final String workoutType;
   final String distance;
+  final String? imageUrl;
+  final double? latitude;
+  final double? longitude;
+  final String? distanceText;
+  final int? estimatedDurationMinutes;
+  final double? distanceKm;
+}
+
+class NfcTag {
+  const NfcTag({required this.id, required this.code, required this.status});
+
+  final int id;
+  final String code;
+  final String status;
+}
+
+class NfcTagResolution {
+  const NfcTagResolution({
+    required this.tag,
+    required this.place,
+    required this.canStartWorkout,
+    this.blockedReason,
+  });
+
+  final NfcTag tag;
+  final Place place;
+  final bool canStartWorkout;
+  final String? blockedReason;
 }
 
 class HomeSnapshot {
@@ -56,11 +90,15 @@ class WorkoutSession {
     required this.id,
     required this.place,
     required this.startedAt,
+    this.status = 'ACTIVE',
+    this.startedByTagCode,
   });
 
   final String id;
   final Place place;
   final DateTime startedAt;
+  final String status;
+  final String? startedByTagCode;
 }
 
 class WorkoutResult {
@@ -71,6 +109,9 @@ class WorkoutResult {
     required this.level,
     required this.leveledUp,
     required this.streakDays,
+    this.totalXp,
+    this.streakUpdated = false,
+    this.alreadyFinished = false,
   });
 
   final Place place;
@@ -79,6 +120,9 @@ class WorkoutResult {
   final int level;
   final bool leveledUp;
   final int streakDays;
+  final int? totalXp;
+  final bool streakUpdated;
+  final bool alreadyFinished;
 }
 
 class WorkoutRecord {
