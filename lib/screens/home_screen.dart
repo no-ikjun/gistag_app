@@ -8,15 +8,69 @@ import '../providers/app_providers.dart';
 import '../widgets/common/app_logo.dart';
 import '../widgets/common/gistag_header.dart';
 import '../widgets/common/gistag_pressable.dart';
-import '../widgets/gistag/nfc_cta_button.dart';
-import '../widgets/gistag/place_card.dart';
+import '../widgets/gistag/nearby_places_map_panel.dart';
 
-class HomeScreen extends ConsumerWidget {
+const _fallbackNearbyPlaces = [
+  Place(
+    id: 'gist-gym',
+    name: '제2학생회관 헬스장',
+    description: '캠퍼스 내 헬스장',
+    workoutType: '헬스',
+    distance: '320m',
+    latitude: 35.2131,
+    longitude: 126.8378,
+    distanceText: '중앙도서관에서 도보 약 5분',
+    estimatedDurationMinutes: 60,
+    distanceKm: 0,
+  ),
+  Place(
+    id: 'gist-track',
+    name: 'GIST 대학 기숙사 A동 러닝 코스',
+    description: '기숙사 주변 러닝 코스',
+    workoutType: '러닝',
+    distance: '120m',
+    latitude: 35.214,
+    longitude: 126.8385,
+    distanceText: '기숙사 A동 인근',
+    estimatedDurationMinutes: 30,
+    distanceKm: 0.12,
+  ),
+  Place(
+    id: 'gist-court',
+    name: '체육관 코트',
+    description: '실내 운동과 스트레칭을 시작하기 좋은 공간',
+    workoutType: '운동',
+    distance: '780m',
+    latitude: 35.2118,
+    longitude: 126.8369,
+    distanceText: '학생회관 옆 실내 체육관',
+    estimatedDurationMinutes: 45,
+    distanceKm: 0.78,
+  ),
+];
+
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(nearbyPlacesControllerProvider.notifier).load();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final homeState = ref.watch(homeControllerProvider);
+    final nearbyState = ref.watch(nearbyPlacesControllerProvider);
+    final nearbyPlaces = nearbyState.asData?.value;
+    final mapConfig = ref.watch(mapConfigProvider);
 
     return homeState.when(
       loading: () =>
@@ -27,18 +81,31 @@ class HomeScreen extends ConsumerWidget {
       ),
       data: (home) {
         final snapshot = home.snapshot;
-        final places = snapshot.recommendedPlaces;
+        final places = nearbyPlaces?.places.isNotEmpty ?? false
+            ? nearbyPlaces!.places
+            : snapshot.recommendedPlaces.isEmpty
+            ? _fallbackNearbyPlaces
+            : snapshot.recommendedPlaces;
+        final center =
+            nearbyPlaces?.center ?? NearbyPlacesController.fallbackCenter;
         final recentRecord = home.records.isNotEmpty
             ? home.records.first
             : null;
-        const nfcDockHeight = 96.0;
+        const nfcDockHeight = 142.0;
 
         return SafeArea(
           child: Stack(
             children: [
               Positioned.fill(
                 child: RefreshIndicator(
-                  onRefresh: ref.read(homeControllerProvider.notifier).refresh,
+                  onRefresh: () async {
+                    await Future.wait([
+                      ref.read(homeControllerProvider.notifier).refresh(),
+                      ref
+                          .read(nearbyPlacesControllerProvider.notifier)
+                          .load(force: true),
+                    ]);
+                  },
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(
                       24,
@@ -84,14 +151,21 @@ class HomeScreen extends ConsumerWidget {
                       _SectionHeaderRow(
                         title: '내 주변 운동 장소',
                         actionText: '지도보기',
-                        onActionTap: () {},
+                        onActionTap: () => context.push('/places-map'),
                       ),
                       const SizedBox(height: 12),
-                      _PlacesCarousel(places: places),
-                      const SizedBox(height: 12),
-                      _CarouselDots(
-                        activeIndex: 0,
-                        total: places.isEmpty ? 1 : places.length,
+                      NearbyPlacesMapPanel(
+                        center: center,
+                        places: places,
+                        canUseNaverMap: mapConfig.canUseNaverMap,
+                        isLoading: nearbyState.isLoading,
+                        statusMessage: _mapStatusMessage(
+                          hasMapKey: mapConfig.canUseNaverMap,
+                          nearby: nearbyPlaces,
+                          error: nearbyState.error,
+                        ),
+                        height: MediaQuery.sizeOf(context).height * 0.52,
+                        onExpand: () => context.push('/places-map'),
                       ),
                     ],
                   ),
@@ -102,7 +176,10 @@ class HomeScreen extends ConsumerWidget {
                 right: 0,
                 bottom: 0,
                 child: _HomeBottomDock(
-                  onTap: () => _openNfcScan(context),
+                  onNfcTap: () => _openNfcScan(context),
+                  onMapTap: () => context.push('/places-map'),
+                  onHistoryTap: () =>
+                      ref.read(selectedHomeTabProvider.notifier).state = 2,
                   height: nfcDockHeight,
                 ),
               ),
@@ -115,6 +192,26 @@ class HomeScreen extends ConsumerWidget {
 
   void _openNfcScan(BuildContext context) {
     context.go('/scan');
+  }
+
+  String _mapStatusMessage({
+    required bool hasMapKey,
+    required NearbyPlacesState? nearby,
+    required Object? error,
+  }) {
+    if (!hasMapKey) {
+      return '지도 키 설정 전이라 미리보기로 표시 중';
+    }
+    if (error != null) {
+      return '기본 장소 표시 중';
+    }
+    if (nearby?.permissionMessage != null) {
+      return nearby!.permissionMessage!;
+    }
+    if (nearby?.places.isEmpty ?? false) {
+      return '주변 장소 없음';
+    }
+    return '핀을 눌러 장소 정보 보기';
   }
 }
 
@@ -188,9 +285,16 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _HomeBottomDock extends StatelessWidget {
-  const _HomeBottomDock({required this.onTap, required this.height});
+  const _HomeBottomDock({
+    required this.onNfcTap,
+    required this.onMapTap,
+    required this.onHistoryTap,
+    required this.height,
+  });
 
-  final VoidCallback onTap;
+  final VoidCallback onNfcTap;
+  final VoidCallback onMapTap;
+  final VoidCallback onHistoryTap;
   final double height;
 
   @override
@@ -207,17 +311,22 @@ class _HomeBottomDock extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.35, 1.0],
+                  stops: const [0.0, 0.28, 0.68, 1.0],
                   colors: [
                     GistagColors.background.withValues(alpha: 0.0),
-                    GistagColors.background.withValues(alpha: 0.65),
+                    GistagColors.background.withValues(alpha: 0.74),
+                    GistagColors.background.withValues(alpha: 0.96),
                     GistagColors.background,
                   ],
                 ),
               ),
             ),
           ),
-          _NfcFloatingCta(onTap: onTap),
+          _WorkoutActionCluster(
+            onNfcTap: onNfcTap,
+            onMapTap: onMapTap,
+            onHistoryTap: onHistoryTap,
+          ),
         ],
       ),
     );
@@ -235,90 +344,77 @@ class _InfoPillsRow extends StatelessWidget {
     final streak = user?.streakDays ?? 8;
     final xp = user?.xp ?? 820;
 
-    return Row(
-      children: [
-        Expanded(
-          child: _InfoPill(
-            tag: '레벨',
-            tagColor: GistagColors.primary,
-            label: '레벨',
-            value: 'Lv. $level',
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: GistagColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _InfoPill(
+              icon: Icons.trending_up_rounded,
+              iconColor: GistagColors.primary,
+              label: '레벨',
+              value: 'Lv. $level',
+            ),
           ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: _InfoPill(
-            tag: '연속',
-            tagColor: const Color(0xFFF59E0B),
-            label: '연속',
-            value: '$streak일',
+          const SizedBox(width: 10),
+          Expanded(
+            child: _InfoPill(
+              icon: Icons.local_fire_department_rounded,
+              iconColor: const Color(0xFFF59E0B),
+              label: '연속',
+              value: '$streak일',
+            ),
           ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: _InfoPill(
-            tag: 'XP',
-            tagColor: const Color(0xFF7C3AED),
-            label: 'XP',
-            value: '$xp XP',
+          const SizedBox(width: 10),
+          Expanded(
+            child: _InfoPill(
+              icon: Icons.bolt_rounded,
+              iconColor: const Color(0xFF7C3AED),
+              label: 'XP',
+              value: '$xp',
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 class _InfoPill extends StatelessWidget {
   const _InfoPill({
-    required this.tag,
-    required this.tagColor,
+    required this.icon,
+    required this.iconColor,
     required this.label,
     required this.value,
   });
 
-  final String tag;
-  final Color tagColor;
+  final IconData icon;
+  final Color iconColor;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: GistagColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 7,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return SizedBox(
+      height: 52,
       child: Row(
         children: [
           Container(
-            width: 24,
-            height: 24,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFFFFEFEE),
-              borderRadius: BorderRadius.circular(999),
+              color: iconColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
             ),
             alignment: Alignment.center,
-            child: Text(
-              tag,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: tagColor,
-                fontSize: 9,
-                height: 1.0,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: Icon(icon, color: iconColor, size: 19),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 9),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -409,113 +505,71 @@ class _RecentRecordCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: GistagColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
-      child: IntrinsicHeight(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(width: 5, color: GistagColors.primary),
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: GistagColors.primarySoft.withValues(alpha: 0.30),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(
+                Icons.fitness_center_rounded,
+                color: GistagColors.primaryDark,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 14),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFE5E2),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        Icons.fitness_center_rounded,
-                        color: GistagColors.primary,
-                        size: 28,
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _formatWhen(record.startedAt, record.placeName),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF8B9098),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _formatWhen(record.startedAt, record.placeName),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: const Color(0xFF8B9098),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            record.workoutType,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  fontSize: 17,
-                                  height: 1.25,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF111111),
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${record.duration.inMinutes}분 · +${record.earnedXp} XP',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: const Color(0xFF5B5F66),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: 0.72,
-                                    minHeight: 8,
-                                    backgroundColor: const Color(0xFFFFE5E2),
-                                    color: GistagColors.primary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                '72%',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: const Color(0xFF8B9098),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    record.placeName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontSize: 17,
+                      height: 1.25,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF111111),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _MiniChip(
+                        icon: Icons.timer_outlined,
+                        label: '${record.duration.inMinutes.clamp(1, 999)}분',
+                      ),
+                      const SizedBox(width: 7),
+                      _MiniChip(
+                        icon: Icons.bolt_rounded,
+                        label: '+${record.earnedXp} XP',
+                        accent: GistagColors.xp,
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
@@ -531,7 +585,47 @@ class _RecentRecordCard extends StatelessWidget {
         .isAtSameMomentAs(DateTime(date.year, date.month, date.day));
 
     final prefix = isYesterday ? '어제' : '${date.month}.${date.day}';
-    return '$prefix · $placeName';
+    return '$prefix 운동 완료';
+  }
+}
+
+class _MiniChip extends StatelessWidget {
+  const _MiniChip({
+    required this.icon,
+    required this.label,
+    this.accent = GistagColors.primary,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F3F2),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: GistagColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: accent, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: GistagColors.text,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -595,102 +689,124 @@ class _EmptyCard extends StatelessWidget {
   }
 }
 
-class _PlacesCarousel extends StatelessWidget {
-  const _PlacesCarousel({required this.places});
+class _WorkoutActionCluster extends StatelessWidget {
+  const _WorkoutActionCluster({
+    required this.onNfcTap,
+    required this.onMapTap,
+    required this.onHistoryTap,
+  });
 
-  final List<Place> places;
+  final VoidCallback onNfcTap;
+  final VoidCallback onMapTap;
+  final VoidCallback onHistoryTap;
 
   @override
   Widget build(BuildContext context) {
-    if (places.isEmpty) {
-      return const _EmptyCard(
-        title: '주변 장소를 불러오는 중이에요',
-        subtitle: '잠시만 기다려주세요.',
-        icon: Icons.place_rounded,
-      );
-    }
-
-    return SizedBox(
-      height: 124,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        padding: EdgeInsets.zero,
-        itemBuilder: (context, index) {
-          final place = places[index];
-          return PlaceCard(place: place, onTap: () {});
-        },
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
-        itemCount: places.length.clamp(0, 10),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: SizedBox(
+        height: 118,
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _RoundToolButton(
+                  icon: Icons.map_rounded,
+                  label: '지도',
+                  onTap: onMapTap,
+                ),
+                const SizedBox(width: 34),
+                const SizedBox(width: 104),
+                const SizedBox(width: 34),
+                _RoundToolButton(
+                  icon: Icons.history_rounded,
+                  label: '기록',
+                  onTap: onHistoryTap,
+                ),
+              ],
+            ),
+            _PrimaryNfcButton(onTap: onNfcTap),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _CarouselDots extends StatelessWidget {
-  const _CarouselDots({required this.activeIndex, required this.total});
+class _PrimaryNfcButton extends StatelessWidget {
+  const _PrimaryNfcButton({required this.onTap});
 
-  final int activeIndex;
-  final int total;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(total, (index) {
-        final active = index == activeIndex;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          width: active ? 18 : 7,
-          height: 7,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            color: active ? GistagColors.primary : const Color(0xFFE7E1E1),
-            borderRadius: BorderRadius.circular(999),
-          ),
-        );
-      }),
+    return GistagPressable(
+      onTap: onTap,
+      hapticsEnabled: true,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 104,
+        height: 104,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: GistagColors.primary,
+          boxShadow: [
+            BoxShadow(
+              color: GistagColors.primary.withValues(alpha: 0.30),
+              blurRadius: 26,
+              offset: const Offset(0, 14),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: const Icon(Icons.sensors_rounded, color: Colors.white, size: 44),
+      ),
     );
   }
 }
 
-class _NfcFloatingCta extends StatelessWidget {
-  const _NfcFloatingCta({required this.onTap});
+class _RoundToolButton extends StatelessWidget {
+  const _RoundToolButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
+  final IconData icon;
+  final String label;
   final VoidCallback onTap;
-
-  /// 탭바 바로 위에 붙지 않게 여유 (피그마 홈 인디케이터 구간과 비슷한 간격).
-  static const double _bottomInset = 10;
-
-  /// 지름 — 너무 크면 본문을 덮어 보이고, 너무 작으면 탭 대비 비율이 어색함.
-  static const double _buttonSize = 68;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: _bottomInset),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: GistagColors.primary.withValues(alpha: 0.28),
-              blurRadius: 14,
-              spreadRadius: 0,
-              offset: const Offset(0, 6),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: NfcCtaButton(
-          onTap: onTap,
-          size: _buttonSize,
-          showLabel: false,
-          hapticsEnabled: true,
+    return Semantics(
+      button: true,
+      label: label,
+      child: GistagPressable(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 62,
+          height: 62,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: GistagColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: GistagColors.text, size: 28),
         ),
       ),
     );

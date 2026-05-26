@@ -2,21 +2,28 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../config/auth_config.dart';
+import '../config/map_config.dart';
 import '../models/auth_models.dart';
 import '../models/gistag_models.dart';
 import '../services/api_client.dart';
+import '../services/api_gistag_service_stub.dart'
+    if (dart.library.io) '../services/api_gistag_service.dart';
 import '../services/auth_api.dart';
 import '../services/auth_repository.dart';
 import '../services/auth_token_manager.dart';
 import '../services/auth_token_storage.dart';
 import '../services/gistag_service.dart';
 import '../services/infoteam_idp_auth_service.dart';
-import '../services/mock_gistag_service.dart';
 
 final authConfigProvider = Provider<AuthConfig>((ref) {
   return AuthConfig.fromEnvironment();
+});
+
+final mapConfigProvider = Provider<MapConfig>((ref) {
+  return MapConfig.fromEnvironment();
 });
 
 final authDioProvider = Provider<Dio>((ref) {
@@ -62,7 +69,7 @@ final apiDioProvider = Provider<Dio>((ref) {
 });
 
 final gistagServiceProvider = Provider<GistagService>((ref) {
-  return MockGistagService();
+  return ApiGistagService(ref.watch(apiDioProvider));
 });
 
 enum AuthStatus { unauthenticated, authenticated }
@@ -204,29 +211,153 @@ class HomeController extends StateNotifier<AsyncValue<HomeData>> {
 }
 
 @immutable
+class GeoPoint {
+  const GeoPoint({required this.latitude, required this.longitude});
+
+  final double latitude;
+  final double longitude;
+}
+
+@immutable
+class NearbyPlacesState {
+  const NearbyPlacesState({
+    required this.center,
+    required this.places,
+    required this.usingFallbackLocation,
+    this.permissionMessage,
+  });
+
+  final GeoPoint center;
+  final List<Place> places;
+  final bool usingFallbackLocation;
+  final String? permissionMessage;
+}
+
+final nearbyPlacesControllerProvider =
+    StateNotifierProvider<
+      NearbyPlacesController,
+      AsyncValue<NearbyPlacesState>
+    >((ref) {
+      return NearbyPlacesController(ref.watch(gistagServiceProvider));
+    });
+
+class NearbyPlacesController
+    extends StateNotifier<AsyncValue<NearbyPlacesState>> {
+  NearbyPlacesController(this._service) : super(const AsyncValue.loading());
+
+  static const GeoPoint fallbackCenter = GeoPoint(
+    latitude: 35.2131,
+    longitude: 126.8378,
+  );
+
+  final GistagService _service;
+
+  Future<void> load({double radiusKm = 1.5, bool force = false}) async {
+    if (!force && state.hasValue) {
+      return;
+    }
+
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final location = await _resolveLocation();
+      final places = await _service.loadNearbyPlaces(
+        latitude: location.center.latitude,
+        longitude: location.center.longitude,
+        radiusKm: radiusKm,
+      );
+      return NearbyPlacesState(
+        center: location.center,
+        places: places,
+        usingFallbackLocation: location.usingFallbackLocation,
+        permissionMessage: location.permissionMessage,
+      );
+    });
+  }
+
+  Future<_ResolvedLocation> _resolveLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        return const _ResolvedLocation(
+          center: fallbackCenter,
+          usingFallbackLocation: true,
+          permissionMessage: '위치 서비스가 꺼져 있어 GIST 기준으로 보여드려요.',
+        );
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.unableToDetermine) {
+        return const _ResolvedLocation(
+          center: fallbackCenter,
+          usingFallbackLocation: true,
+          permissionMessage: '위치 권한이 없어 GIST 기준으로 보여드려요.',
+        );
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 8),
+        ),
+      );
+      return _ResolvedLocation(
+        center: GeoPoint(
+          latitude: position.latitude,
+          longitude: position.longitude,
+        ),
+        usingFallbackLocation: false,
+      );
+    } catch (_) {
+      return const _ResolvedLocation(
+        center: fallbackCenter,
+        usingFallbackLocation: true,
+        permissionMessage: '현재 위치를 확인하지 못해 GIST 기준으로 보여드려요.',
+      );
+    }
+  }
+}
+
+@immutable
+class _ResolvedLocation {
+  const _ResolvedLocation({
+    required this.center,
+    required this.usingFallbackLocation,
+    this.permissionMessage,
+  });
+
+  final GeoPoint center;
+  final bool usingFallbackLocation;
+  final String? permissionMessage;
+}
+
+@immutable
 class WorkoutFlowState {
   const WorkoutFlowState({
-    this.scannedPlace,
+    this.resolvedTag,
     this.activeSession,
     this.lastResult,
   });
 
-  final Place? scannedPlace;
+  final NfcTagResolution? resolvedTag;
   final WorkoutSession? activeSession;
   final WorkoutResult? lastResult;
 
   WorkoutFlowState copyWith({
-    Place? scannedPlace,
+    NfcTagResolution? resolvedTag,
     WorkoutSession? activeSession,
     WorkoutResult? lastResult,
-    bool clearScannedPlace = false,
+    bool clearResolvedTag = false,
     bool clearActiveSession = false,
     bool clearLastResult = false,
   }) {
     return WorkoutFlowState(
-      scannedPlace: clearScannedPlace
-          ? null
-          : scannedPlace ?? this.scannedPlace,
+      resolvedTag: clearResolvedTag ? null : resolvedTag ?? this.resolvedTag,
       activeSession: clearActiveSession
           ? null
           : activeSession ?? this.activeSession,
@@ -250,22 +381,37 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
 
   WorkoutFlowState get _value => state.value ?? const WorkoutFlowState();
 
-  Future<Place?> scanNfcTag() async {
+  Future<NfcTagResolution?> scanNfcTag() async {
+    final previous = _value;
     state = const AsyncValue.loading();
     final result = await AsyncValue.guard(() async {
-      final place = await _service.verifyNfcTag();
-      return _value.copyWith(scannedPlace: place, clearLastResult: true);
+      final resolution = await _service.verifyNfcTag();
+      return previous.copyWith(resolvedTag: resolution, clearLastResult: true);
     });
     state = result;
-    return result.value?.scannedPlace;
+    return result.value?.resolvedTag;
   }
 
-  Future<void> startWorkout(Place place) async {
-    state = await AsyncValue.guard(() async {
-      final session = await _service.startWorkout(place);
-      return _value.copyWith(
+  Future<void> restoreActiveWorkout() async {
+    final previous = _value;
+    final result = await AsyncValue.guard(() async {
+      final session = await _service.loadActiveWorkout();
+      return previous.copyWith(
         activeSession: session,
-        scannedPlace: place,
+        clearActiveSession: session == null,
+      );
+    });
+    state = result;
+  }
+
+  Future<void> startWorkout(NfcTagResolution resolution) async {
+    final previous = _value;
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final session = await _service.startWorkout(resolution);
+      return previous.copyWith(
+        activeSession: session,
+        resolvedTag: resolution,
         clearLastResult: true,
       );
     });
@@ -290,6 +436,28 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
     });
     state = result;
     return result.value?.lastResult;
+  }
+
+  Future<bool> cancelWorkout() async {
+    final session = _value.activeSession;
+    if (session == null) {
+      state = AsyncValue.error(
+        StateError('No active workout session.'),
+        StackTrace.current,
+      );
+      return false;
+    }
+
+    final previous = _value;
+    final result = await AsyncValue.guard(() async {
+      await _service.cancelWorkout(session);
+      return previous.copyWith(
+        clearActiveSession: true,
+        clearResolvedTag: true,
+      );
+    });
+    state = result;
+    return !result.hasError;
   }
 }
 

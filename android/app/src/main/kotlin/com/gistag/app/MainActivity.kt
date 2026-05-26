@@ -1,4 +1,4 @@
-package com.example.gistag_app
+package com.gistag.app
 
 import io.flutter.embedding.android.FlutterActivity
 
