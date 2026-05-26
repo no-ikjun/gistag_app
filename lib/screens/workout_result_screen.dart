@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../app/app_theme.dart';
+import '../models/gistag_models.dart';
 import '../providers/app_providers.dart';
 import '../widgets/common/gistag_button.dart';
 
@@ -22,7 +23,16 @@ class WorkoutResultScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('운동 결과가 없어요.'),
+                  const Icon(
+                    Icons.receipt_long_outlined,
+                    color: GistagColors.primary,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    '운동 결과가 없어요',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 12),
                   FilledButton(
                     onPressed: () => context.go('/home'),
@@ -38,108 +48,265 @@ class WorkoutResultScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            children: [
-              const Spacer(),
-              Container(
-                width: 150,
-                height: 150,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFEFEE),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.emoji_events_rounded,
-                  color: GistagColors.xp,
-                  size: 82,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                '운동 완료!',
-                style: Theme.of(context).textTheme.headlineLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                '${result.streakDays}일 연속 운동 중이에요',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(color: GistagColors.primary),
-              ),
-              const SizedBox(height: 28),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: GistagColors.border),
-                ),
-                child: Column(
-                  children: [
-                    _ResultMetric(
-                      label: '획득 XP',
-                      value: '+${result.earnedXp} XP',
-                    ),
-                    const Divider(height: 28),
-                    _ResultMetric(
-                      label: '현재 레벨',
-                      value: result.leveledUp
-                          ? 'Lv.${result.level} 레벨업!'
-                          : 'Lv.${result.level}',
-                    ),
-                    const Divider(height: 28),
-                    _ResultMetric(
-                      label: '운동 시간',
-                      value: '${result.duration.inMinutes.clamp(1, 999)}분',
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              GistagButton(
-                label: '홈으로 돌아가기',
-                onPressed: () {
-                  ref.read(selectedHomeTabProvider.notifier).state = 0;
-                  context.go('/home');
-                },
-              ),
-              const SizedBox(height: 12),
-              GistagButton(
-                label: '내 기록 보기',
-                onPressed: () {
-                  ref.read(selectedHomeTabProvider.notifier).state = 2;
-                  context.go('/home');
-                },
-                backgroundColor: Colors.white,
-                foregroundColor: GistagColors.primary,
-              ),
-            ],
-          ),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+          children: [
+            _ResultHero(result: result),
+            const SizedBox(height: 18),
+            _RewardCard(result: result),
+            const SizedBox(height: 18),
+            _PlaceResultCard(result: result),
+            const SizedBox(height: 28),
+            GistagButton(
+              label: '홈으로 돌아가기',
+              onPressed: () {
+                ref.read(selectedHomeTabProvider.notifier).state = 0;
+                context.go('/home');
+              },
+            ),
+            const SizedBox(height: 10),
+            GistagButton(
+              label: '내 기록 보기',
+              onPressed: () {
+                ref.read(selectedHomeTabProvider.notifier).state = 2;
+                context.go('/home');
+              },
+              backgroundColor: Colors.white,
+              foregroundColor: GistagColors.text,
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _ResultMetric extends StatelessWidget {
-  const _ResultMetric({required this.label, required this.value});
+class _ResultHero extends StatelessWidget {
+  const _ResultHero({required this.result});
 
-  final String label;
-  final String value;
+  final WorkoutResult result;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        ),
-        Text(value, style: Theme.of(context).textTheme.titleLarge),
-      ],
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: GistagColors.border),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 86,
+            height: 86,
+            decoration: BoxDecoration(
+              color: GistagColors.primarySoft.withValues(alpha: 0.32),
+              borderRadius: BorderRadius.circular(26),
+            ),
+            child: const Icon(
+              Icons.emoji_events_rounded,
+              color: GistagColors.xp,
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            result.alreadyFinished ? '기록을 다시 불러왔어요' : '운동 완료',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w800),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            result.streakUpdated
+                ? '${result.streakDays}일 연속 루틴을 이어갔어요'
+                : '오늘의 운동 기록이 저장됐습니다.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: GistagColors.primaryDark,
+              fontWeight: FontWeight.w700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RewardCard extends StatelessWidget {
+  const _RewardCard({required this.result});
+
+  final WorkoutResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F3F2),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: GistagColors.border),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _RewardMetric(
+                  label: '획득 XP',
+                  value: '+${result.earnedXp}',
+                  icon: Icons.bolt_rounded,
+                  accent: GistagColors.xp,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _RewardMetric(
+                  label: '운동 시간',
+                  value: '${result.duration.inMinutes.clamp(1, 999)}분',
+                  icon: Icons.timer_outlined,
+                  accent: GistagColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _RewardMetric(
+                  label: '현재 레벨',
+                  value: result.leveledUp
+                      ? 'Lv.${result.level} ↑'
+                      : 'Lv.${result.level}',
+                  icon: Icons.trending_up_rounded,
+                  accent: GistagColors.success,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _RewardMetric(
+                  label: '누적 XP',
+                  value: '${result.totalXp ?? result.earnedXp}',
+                  icon: Icons.stars_rounded,
+                  accent: const Color(0xFF7C3AED),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RewardMetric extends StatelessWidget {
+  const _RewardMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 104,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: GistagColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: accent, size: 21),
+          const Spacer(),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlaceResultCard extends StatelessWidget {
+  const _PlaceResultCard({required this.result});
+
+  final WorkoutResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: GistagColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: GistagColors.primarySoft.withValues(alpha: 0.30),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(
+              Icons.location_on_outlined,
+              color: GistagColors.primaryDark,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  result.place.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  result.place.workoutType,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
