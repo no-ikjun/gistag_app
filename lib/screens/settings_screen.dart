@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../app/app_theme.dart';
+import '../models/auth_models.dart';
 import '../providers/app_providers.dart';
 import '../widgets/common/gistag_dialog.dart';
 import '../widgets/common/gistag_header.dart';
@@ -21,8 +22,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
-    final userId = auth.maybeWhen(
-      data: (session) => session.user?.userId,
+    final user = auth.maybeWhen(
+      data: (session) => session.user,
       orElse: () => null,
     );
     final canLogout = !_isLoggingOut && !auth.isLoading;
@@ -46,18 +47,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 12),
+            _ProfileSummary(user: user),
+            const SizedBox(height: 12),
             _SettingsGroup(
               children: [
                 _SettingsRow(
-                  icon: Icons.badge_outlined,
-                  title: '사용자 ID',
-                  subtitle: userId ?? '인증된 사용자 정보를 확인하고 있어요.',
+                  icon: Icons.mail_outline_rounded,
+                  title: '이메일',
+                  subtitle: user?.emailLabel ?? '확인 중',
                 ),
                 const _SettingsDivider(),
                 _SettingsRow(
                   icon: Icons.verified_user_outlined,
-                  title: '인증 상태',
-                  subtitle: auth.isLoading ? '확인 중' : '로그인됨',
+                  title: '로그인 방식',
+                  subtitle: user?.providerType.label ?? '확인 중',
+                ),
+                const _SettingsDivider(),
+                _SettingsRow(
+                  icon: Icons.badge_outlined,
+                  title: '사용자 ID',
+                  subtitle: user?.userId ?? '확인 중',
                 ),
               ],
             ),
@@ -115,6 +124,110 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SnackBar(content: Text('로그아웃하지 못했어요. 잠시 후 다시 시도해주세요.')),
       );
     }
+  }
+}
+
+class _ProfileSummary extends StatelessWidget {
+  const _ProfileSummary({required this.user});
+
+  final AuthUser? user;
+
+  @override
+  Widget build(BuildContext context) {
+    final nickname = user?.nickname;
+    final email = user?.emailLabel;
+    final providerLabel = user?.providerType.label;
+    final initial = nickname == null || nickname.isEmpty
+        ? 'G'
+        : nickname.characters.first;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: GistagColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: GistagColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: GistagColors.primarySoft.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                initial,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: GistagColors.primaryDark,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nickname ?? '사용자 정보를 확인하고 있어요',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(fontSize: 18, height: 1.2),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    email ?? '이메일 확인 중',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: GistagColors.mutedText,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            _ProviderBadge(label: providerLabel ?? '확인 중'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProviderBadge extends StatelessWidget {
+  const _ProviderBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F3F2),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: GistagColors.border),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: GistagColors.text,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          height: 1,
+        ),
+      ),
+    );
   }
 }
 

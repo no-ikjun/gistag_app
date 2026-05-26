@@ -32,14 +32,62 @@ class AuthTokens {
   String get authorizationHeader => '$tokenType $accessToken';
 }
 
+enum AuthProviderType {
+  infoteam,
+  local,
+  unknown;
+
+  factory AuthProviderType.fromJson(String? value) {
+    return switch (value) {
+      'INFOTEAM' => AuthProviderType.infoteam,
+      'LOCAL' => AuthProviderType.local,
+      _ => AuthProviderType.unknown,
+    };
+  }
+
+  String get label {
+    return switch (this) {
+      AuthProviderType.infoteam => '인포팀 계정',
+      AuthProviderType.local => '이메일 계정',
+      AuthProviderType.unknown => '알 수 없음',
+    };
+  }
+}
+
 class AuthUser {
-  const AuthUser({required this.userId});
+  const AuthUser({
+    required this.userId,
+    required this.nickname,
+    required this.providerType,
+    this.email,
+  });
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
-    return AuthUser(userId: json['userId'] as String);
+    final userId = json['userId'] as String;
+    final nickname = json['nickname'] as String?;
+
+    return AuthUser(
+      userId: userId,
+      nickname: nickname == null || nickname.trim().isEmpty
+          ? userId
+          : nickname.trim(),
+      email: json['email'] as String?,
+      providerType: AuthProviderType.fromJson(json['providerType'] as String?),
+    );
   }
 
   final String userId;
+  final String nickname;
+  final String? email;
+  final AuthProviderType providerType;
+
+  String get emailLabel {
+    final value = email?.trim();
+    if (value == null || value.isEmpty) {
+      return '미연결';
+    }
+    return value;
+  }
 }
 
 class InfoteamAuthorizationCode {
