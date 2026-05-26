@@ -4,42 +4,21 @@ class GistagUser {
     required this.level,
     required this.xp,
     required this.streakDays,
-    required this.onboardingCompleted,
   });
 
   final String name;
   final int level;
   final int xp;
   final int streakDays;
-  final bool onboardingCompleted;
 
-  GistagUser copyWith({
-    String? name,
-    int? level,
-    int? xp,
-    int? streakDays,
-    bool? onboardingCompleted,
-  }) {
+  GistagUser copyWith({String? name, int? level, int? xp, int? streakDays}) {
     return GistagUser(
       name: name ?? this.name,
       level: level ?? this.level,
       xp: xp ?? this.xp,
       streakDays: streakDays ?? this.streakDays,
-      onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
     );
   }
-}
-
-class OnboardingProfile {
-  const OnboardingProfile({
-    required this.gender,
-    required this.workoutTypes,
-    required this.workoutFrequency,
-  });
-
-  final String gender;
-  final List<String> workoutTypes;
-  final String workoutFrequency;
 }
 
 class Place {

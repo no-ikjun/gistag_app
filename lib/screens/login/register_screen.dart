@@ -7,69 +7,71 @@ import '../../models/auth_models.dart';
 import '../../providers/app_providers.dart';
 import '../../widgets/common/app_logo.dart';
 import '../../widgets/common/gistag_button.dart';
-import '../../widgets/common/gistag_pressable.dart';
+import '../../widgets/common/gistag_header.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends ConsumerStatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nicknameController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _nicknameController.dispose();
     super.dispose();
   }
 
-  Future<void> _loginWithEmail() async {
+  Future<void> _register() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
     FocusScope.of(context).unfocus();
     await ref
         .read(authControllerProvider.notifier)
-        .loginWithEmail(
+        .registerWithEmail(
           email: _emailController.text.trim(),
           password: _passwordController.text,
+          nickname: _nicknameController.text.trim(),
         );
-  }
-
-  Future<void> _loginWithInfoteam() async {
-    FocusScope.of(context).unfocus();
-    await ref.read(authControllerProvider.notifier).loginWithInfoteam();
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-    final authConfig = ref.watch(authConfigProvider);
     final loading = authState.isLoading;
 
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(28, 54, 28, 28),
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 28),
           children: [
-            const AppLogo(width: 132),
-            const SizedBox(height: 28),
-            Text(
-              'Gistag 로그인',
-              style: Theme.of(context).textTheme.headlineMedium,
+            GistagHeader(
+              center: const Align(
+                alignment: Alignment.centerRight,
+                child: AppLogo(width: 104),
+              ),
+              showBellAction: false,
+              automaticallyImplyBack: true,
+              onBackTap: loading ? null : () => context.go('/login'),
             ),
+            const SizedBox(height: 28),
+            Text('계정 만들기', style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(
-              '이메일 계정이나 인포팀 계정으로 계속하세요.',
+              '로컬 이메일/비밀번호 계정을 생성합니다.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 28),
             AutofillGroup(
               child: Form(
                 key: _formKey,
@@ -86,12 +88,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
+                      controller: _nicknameController,
+                      enabled: !loading,
+                      autofillHints: const [AutofillHints.nickname],
+                      textInputAction: TextInputAction.next,
+                      decoration: _fieldDecoration('닉네임'),
+                      validator: _validateNickname,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
                       controller: _passwordController,
                       enabled: !loading,
                       obscureText: _obscurePassword,
-                      autofillHints: const [AutofillHints.password],
+                      autofillHints: const [AutofillHints.newPassword],
                       textInputAction: TextInputAction.done,
                       decoration: _fieldDecoration('비밀번호').copyWith(
+                        helperText: '8자 이상',
                         suffixIcon: IconButton(
                           onPressed: loading
                               ? null
@@ -108,7 +120,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       validator: _validatePassword,
                       onFieldSubmitted: (_) {
                         if (!loading) {
-                          _loginWithEmail();
+                          _register();
                         }
                       },
                     ),
@@ -117,9 +129,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _EmailLoginButton(
-              label: loading ? '로그인 중...' : '이메일로 로그인',
-              onPressed: loading ? null : _loginWithEmail,
+            GistagButton(
+              label: loading ? '가입 중...' : '가입하고 시작하기',
+              onPressed: loading ? null : _register,
             ),
             if (authState.hasError) ...[
               const SizedBox(height: 12),
@@ -129,36 +141,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: const TextStyle(color: GistagColors.primary),
               ),
             ],
-            const SizedBox(height: 14),
-            TextButton(
-              onPressed: loading ? null : () => context.go('/register'),
-              style: TextButton.styleFrom(
-                foregroundColor: GistagColors.mutedText,
-                textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              child: const Text('계정 만들기'),
-            ),
-            const SizedBox(height: 48),
-            const _LoginDivider(label: '간편 로그인'),
             const SizedBox(height: 18),
-            GistagButton(
-              label: '인포팀 계정으로 계속하기',
-              onPressed: loading || !authConfig.canUseInfoteamLogin
-                  ? null
-                  : _loginWithInfoteam,
-              icon: const Icon(Icons.account_circle_rounded, size: 20),
+            TextButton(
+              onPressed: loading ? null : () => context.go('/login'),
+              child: const Text('이미 계정이 있어요'),
             ),
-            if (!authConfig.canUseInfoteamLogin) ...[
-              const SizedBox(height: 8),
-              const Text(
-                'GISTAG_IDP_CLIENT_ID가 앱에 주입되지 않았어요. .env 저장 후 flutter run --dart-define-from-file=.env로 다시 실행해주세요.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: GistagColors.mutedText, fontSize: 12),
-              ),
-            ],
           ],
         ),
       ),
@@ -196,9 +183,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return null;
   }
 
+  String? _validateNickname(String? value) {
+    if ((value?.trim() ?? '').isEmpty) {
+      return '닉네임을 입력해주세요.';
+    }
+    return null;
+  }
+
   String? _validatePassword(String? value) {
-    if ((value ?? '').isEmpty) {
-      return '비밀번호를 입력해주세요.';
+    if ((value ?? '').length < 8) {
+      return '비밀번호는 8자 이상이어야 합니다.';
     }
     return null;
   }
@@ -207,78 +201,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return switch (error) {
       AuthApiException(:final message) => message,
       AuthFlowException(:final message) => message,
-      _ => '로그인에 실패했습니다. 다시 시도해주세요.',
+      _ => '회원가입에 실패했습니다. 다시 시도해주세요.',
     };
-  }
-}
-
-class _EmailLoginButton extends StatelessWidget {
-  const _EmailLoginButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    final foreground = enabled ? GistagColors.text : GistagColors.mutedText;
-    final borderColor = enabled ? GistagColors.border : GistagColors.border;
-
-    return SizedBox(
-      width: double.infinity,
-      child: GistagPressable(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          height: 52,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          decoration: BoxDecoration(
-            color: enabled
-                ? GistagColors.surface.withValues(alpha: 0.72)
-                : const Color(0xFFF4EEEE),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderColor),
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: foreground,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LoginDivider extends StatelessWidget {
-  const _LoginDivider({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: Divider(color: GistagColors.border, height: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: GistagColors.mutedText,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        const Expanded(child: Divider(color: GistagColors.border, height: 1)),
-      ],
-    );
   }
 }

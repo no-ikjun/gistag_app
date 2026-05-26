@@ -6,12 +6,14 @@ class GistagColors {
   /// Figma token: primary-400 (#FF4A3D)
   static const primary = Color(0xFFFF4A3D);
   static const primaryDark = Color(0xFFD92D27);
+
   /// Figma token: primary-200 (#FFCBC4)
   static const primarySoft = Color(0xFFFFCBC4);
   static const background = Color(0xFFFFF7F6);
   static const surface = Colors.white;
   static const text = Color(0xFF222222);
   static const mutedText = Color(0xFF767676);
+
   /// Figma token: neutral-border (#EBE5E5)
   static const border = Color(0xFFEBE5E5);
   static const disabled = primarySoft;

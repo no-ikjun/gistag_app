@@ -14,9 +14,9 @@ class GistagPressable extends StatefulWidget {
     this.borderRadius,
     this.customBorder,
   }) : assert(
-          borderRadius == null || customBorder == null,
-          'borderRadius and customBorder cannot be used together.',
-        );
+         borderRadius == null || customBorder == null,
+         'borderRadius and customBorder cannot be used together.',
+       );
 
   final Widget child;
   final VoidCallback? onTap;
@@ -111,4 +111,3 @@ class _GistagPressableState extends State<GistagPressable> {
     );
   }
 }
-

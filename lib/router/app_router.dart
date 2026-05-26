@@ -6,8 +6,9 @@ import '../providers/app_providers.dart';
 import '../screens/active_workout_screen.dart';
 import '../screens/home_shell_screen.dart';
 import '../screens/login/login_screen.dart';
+import '../screens/login/register_screen.dart';
 import '../screens/nfc_scan_screen.dart';
-import '../screens/onboarding_screen.dart';
+import '../screens/settings_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/tag_success_screen.dart';
 import '../screens/workout_result_screen.dart';
@@ -30,12 +31,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
-        path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeShellScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
         path: '/scan',
@@ -67,30 +72,24 @@ class RouterNotifier extends ChangeNotifier {
   String? redirect(BuildContext context, GoRouterState state) {
     final auth = _ref.read(authControllerProvider);
     final location = state.matchedLocation;
+    final isAuthRoute =
+        location == '/splash' ||
+        location == '/login' ||
+        location == '/register';
 
     if (auth.isLoading) {
-      final canStayPut =
-          location == '/splash' ||
-          location == '/login' ||
-          location == '/onboarding';
-      return canStayPut ? null : '/splash';
+      return isAuthRoute ? null : '/splash';
     }
 
     if (auth.hasError) {
-      return location == '/login' ? null : '/login';
+      return isAuthRoute ? null : '/login';
     }
 
     final session = auth.value;
     return switch (session?.status) {
-      AuthStatus.unauthenticated => location == '/login' ? null : '/login',
-      AuthStatus.onboardingRequired =>
-        location == '/onboarding' ? null : '/onboarding',
-      AuthStatus.authenticated =>
-        location == '/splash' ||
-                location == '/login' ||
-                location == '/onboarding'
-            ? '/home'
-            : null,
+      AuthStatus.unauthenticated =>
+        location == '/login' || location == '/register' ? null : '/login',
+      AuthStatus.authenticated => isAuthRoute ? '/home' : null,
       null => '/splash',
     };
   }

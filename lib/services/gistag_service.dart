@@ -1,12 +1,6 @@
 import '../models/gistag_models.dart';
 
 abstract class GistagService {
-  Future<void> initialize();
-
-  Future<GistagUser> loginWithKakao();
-
-  Future<GistagUser> saveOnboarding(OnboardingProfile profile);
-
   Future<HomeSnapshot> loadHome();
 
   Future<Place> verifyNfcTag();

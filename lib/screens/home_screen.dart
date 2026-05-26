@@ -28,7 +28,9 @@ class HomeScreen extends ConsumerWidget {
       data: (home) {
         final snapshot = home.snapshot;
         final places = snapshot.recommendedPlaces;
-        final recentRecord = home.records.isNotEmpty ? home.records.first : null;
+        final recentRecord = home.records.isNotEmpty
+            ? home.records.first
+            : null;
         const nfcDockHeight = 96.0;
 
         return SafeArea(
@@ -38,20 +40,26 @@ class HomeScreen extends ConsumerWidget {
                 child: RefreshIndicator(
                   onRefresh: ref.read(homeControllerProvider.notifier).refresh,
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(24, 14, 24, 24).copyWith(
-                      bottom: 16 + nfcDockHeight,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(
+                      24,
+                      10,
+                      24,
+                      24,
+                    ).copyWith(bottom: 16 + nfcDockHeight),
                     children: [
-                      _HomeHeader(userName: home.user.name),
+                      _HomeHeader(
+                        userName: home.user.name,
+                        onSettingsTap: () => context.push('/settings'),
+                      ),
                       const SizedBox(height: 14),
                       Text(
                         '오늘은 GIST 주변 루틴을 가볍게 추천해드릴게요',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: const Color(0xFF5B5F66),
-                              fontSize: 15,
-                              height: 1.45,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          color: const Color(0xFF5B5F66),
+                          fontSize: 15,
+                          height: 1.45,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _InfoPillsRow(user: home.user),
@@ -59,9 +67,9 @@ class HomeScreen extends ConsumerWidget {
                       _SectionHeaderRow(
                         title: '최근 나의 기록',
                         actionText: '전체보기',
-                        onActionTap: () => ref
-                            .read(selectedHomeTabProvider.notifier)
-                            .state = 2,
+                        onActionTap: () =>
+                            ref.read(selectedHomeTabProvider.notifier).state =
+                                2,
                       ),
                       const SizedBox(height: 10),
                       if (recentRecord != null)
@@ -137,9 +145,10 @@ class _HomeError extends StatelessWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.userName});
+  const _HomeHeader({required this.userName, required this.onSettingsTap});
 
   final String userName;
+  final VoidCallback onSettingsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -147,16 +156,31 @@ class _HomeHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GistagHeader(
-          center: const AppLogo(width: 112),
-          onBellTap: () {},
+          center: const AppLogo(width: 104),
+          trailing: Semantics(
+            button: true,
+            label: '설정',
+            child: GistagPressable(
+              onTap: onSettingsTap,
+              borderRadius: BorderRadius.circular(10),
+              child: const SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(
+                  Icons.settings_rounded,
+                  color: GistagColors.text,
+                  size: 23,
+                ),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 10),
         Text(
           '$userName님, 운동을 시작해볼까요?',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontSize: 23,
-                letterSpacing: -0.4,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontSize: 23, letterSpacing: -0.4),
         ),
       ],
     );
@@ -164,10 +188,7 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _HomeBottomDock extends StatelessWidget {
-  const _HomeBottomDock({
-    required this.onTap,
-    required this.height,
-  });
+  const _HomeBottomDock({required this.onTap, required this.height});
 
   final VoidCallback onTap;
   final double height;
@@ -290,11 +311,11 @@ class _InfoPill extends StatelessWidget {
             child: Text(
               tag,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: tagColor,
-                    fontSize: 9,
-                    height: 1.0,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: tagColor,
+                fontSize: 9,
+                height: 1.0,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -306,11 +327,11 @@ class _InfoPill extends StatelessWidget {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF8B9098),
-                        fontSize: 11,
-                        height: 1.0,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    color: const Color(0xFF8B9098),
+                    fontSize: 11,
+                    height: 1.0,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -318,11 +339,11 @@ class _InfoPill extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: const Color(0xFF111111),
-                        fontSize: 14,
-                        height: 1.0,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: const Color(0xFF111111),
+                    fontSize: 14,
+                    height: 1.0,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -352,10 +373,10 @@ class _SectionHeaderRow extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontSize: 18,
-                  letterSpacing: -0.2,
-                  color: const Color(0xFF111111),
-                ),
+              fontSize: 18,
+              letterSpacing: -0.2,
+              color: const Color(0xFF111111),
+            ),
           ),
         ),
         GistagPressable(
@@ -366,10 +387,10 @@ class _SectionHeaderRow extends StatelessWidget {
             child: Text(
               actionText,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: GistagColors.primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: GistagColors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
@@ -402,10 +423,7 @@ class _RecentRecordCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              width: 5,
-              color: GistagColors.primary,
-            ),
+            Container(width: 5, color: GistagColors.primary),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
@@ -435,9 +453,7 @@ class _RecentRecordCard extends StatelessWidget {
                             _formatWhen(record.startedAt, record.placeName),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: const Color(0xFF8B9098),
                                   fontSize: 12,
@@ -449,9 +465,7 @@ class _RecentRecordCard extends StatelessWidget {
                             record.workoutType,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   fontSize: 17,
                                   height: 1.25,
@@ -464,9 +478,7 @@ class _RecentRecordCard extends StatelessWidget {
                             '${record.duration.inMinutes}분 · +${record.earnedXp} XP',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: const Color(0xFF5B5F66),
                                   fontSize: 13,
@@ -490,9 +502,7 @@ class _RecentRecordCard extends StatelessWidget {
                               const SizedBox(width: 10),
                               Text(
                                 '72%',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       color: const Color(0xFF8B9098),
                                       fontSize: 12,
@@ -564,17 +574,17 @@ class _EmptyCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: const Color(0xFF111111),
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: const Color(0xFF111111),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF8B9098),
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: const Color(0xFF8B9098),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),

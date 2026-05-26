@@ -38,6 +38,11 @@ dependencies:
   flutter_riverpod: ^3.3.1
   go_router: ^17.0.0
   scaler: ^1.1.2+1
+  dio: ^5.9.2
+  flutter_secure_storage: ^10.3.0
+  flutter_web_auth_2: ^5.0.2
+  crypto: ^3.0.7
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +66,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env
     - assets/images/
     - assets/images/footer/
 

@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import 'gistag_pressable.dart';
 
-/// Figma `Header` 컴포넌트 기준 공통 상단 바.
+/// 앱 전반에서 쓰는 조밀한 공통 상단 바.
 ///
 /// - 뒤로가기: [automaticallyImplyBack]이 true이고 스택에서 pop 가능할 때만 [icon_arrow] 표시.
 /// - 우측: [trailing]이 있으면 그것을 쓰고, 없으면 [showBellAction]일 때 [icon_bell] 표시.
-/// - 가로 inset은 부모(SafeArea, ListView padding 등)에 맡기고, 기본값은 상·하만 둡니다.
+/// - 가로 inset은 부모(SafeArea, ListView padding 등)에 맡깁니다.
 class GistagHeader extends StatelessWidget {
   const GistagHeader({
     super.key,
@@ -17,13 +17,12 @@ class GistagHeader extends StatelessWidget {
     this.showBellAction = true,
     this.onBellTap,
     this.trailing,
-    this.padding = const EdgeInsets.fromLTRB(0, 13, 0, 13),
+    this.padding = EdgeInsets.zero,
     this.automaticallyImplyBack = true,
     this.onBackTap,
   });
 
-  /// Figma 프레임 높이 72에 맞춤.
-  static const double barHeight = 72;
+  static const double barHeight = 48;
 
   static const String _assetBack = 'assets/images/icon_arrow.svg';
   static const String _assetBell = 'assets/images/icon_bell.svg';
@@ -40,7 +39,6 @@ class GistagHeader extends StatelessWidget {
   /// 있으면 우측 알림 대신 표시.
   final Widget? trailing;
 
-  /// 기본은 상·하 13 (Figma top offset). 좌우는 부모 패딩에 맞추려면 0 유지.
   final EdgeInsetsGeometry padding;
 
   final bool automaticallyImplyBack;
@@ -64,40 +62,73 @@ class GistagHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showBack =
-        automaticallyImplyBack && canNavigateBack(context);
+        automaticallyImplyBack &&
+        (onBackTap != null || canNavigateBack(context));
+    final trailingAction =
+        trailing ??
+        (showBellAction
+            ? _HeaderIconButton(
+                asset: _assetBell,
+                iconSize: 24,
+                onTap: onBellTap,
+                semanticLabel: '알림',
+              )
+            : null);
 
     return SizedBox(
       height: barHeight,
       child: Padding(
         padding: padding,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (showBack) ...[
-              _HeaderIconButton(
-                asset: _assetBack,
-                onTap: onBackTap ?? () => navigateBack(context),
-                semanticLabel: '뒤로',
+        child: centerTitle
+            ? Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (showBack)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _HeaderIconButton(
+                        asset: _assetBack,
+                        iconSize: 22,
+                        onTap: onBackTap ?? () => navigateBack(context),
+                        semanticLabel: '뒤로',
+                      ),
+                    ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: showBack || trailingAction != null
+                          ? _HeaderIconButton.buttonSize + 8
+                          : 0,
+                    ),
+                    child: Center(child: center ?? const SizedBox.shrink()),
+                  ),
+                  if (trailingAction != null)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: trailingAction,
+                    ),
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (showBack) ...[
+                    _HeaderIconButton(
+                      asset: _assetBack,
+                      iconSize: 22,
+                      onTap: onBackTap ?? () => navigateBack(context),
+                      semanticLabel: '뒤로',
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: center ?? const SizedBox.shrink(),
+                    ),
+                  ),
+                  if (trailingAction != null) trailingAction,
+                ],
               ),
-              const SizedBox(width: 8),
-            ],
-            Expanded(
-              child: Align(
-                alignment:
-                    centerTitle ? Alignment.center : Alignment.centerLeft,
-                child: center ?? const SizedBox.shrink(),
-              ),
-            ),
-            if (trailing != null)
-              trailing!
-            else if (showBellAction)
-              _HeaderIconButton(
-                asset: _assetBell,
-                onTap: onBellTap,
-                semanticLabel: '알림',
-              ),
-          ],
-        ),
       ),
     );
   }
@@ -106,11 +137,15 @@ class GistagHeader extends StatelessWidget {
 class _HeaderIconButton extends StatelessWidget {
   const _HeaderIconButton({
     required this.asset,
+    required this.iconSize,
     this.onTap,
     this.semanticLabel,
   });
 
+  static const double buttonSize = 40;
+
   final String asset;
+  final double iconSize;
   final VoidCallback? onTap;
   final String? semanticLabel;
 
@@ -121,16 +156,12 @@ class _HeaderIconButton extends StatelessWidget {
       label: semanticLabel,
       child: GistagPressable(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: SizedBox(
-          width: 48,
-          height: 48,
+          width: buttonSize,
+          height: buttonSize,
           child: Center(
-            child: SvgPicture.asset(
-              asset,
-              width: 35,
-              height: 35,
-            ),
+            child: SvgPicture.asset(asset, width: iconSize, height: iconSize),
           ),
         ),
       ),
