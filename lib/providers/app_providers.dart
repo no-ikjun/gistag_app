@@ -8,6 +8,7 @@ import '../config/auth_config.dart';
 import '../config/map_config.dart';
 import '../models/auth_models.dart';
 import '../models/gistag_models.dart';
+import '../models/user_profile_models.dart';
 import '../services/api_client.dart';
 import '../services/api_gistag_service_stub.dart'
     if (dart.library.io) '../services/api_gistag_service.dart';
@@ -17,6 +18,7 @@ import '../services/auth_token_manager.dart';
 import '../services/auth_token_storage.dart';
 import '../services/gistag_service.dart';
 import '../services/infoteam_idp_auth_service.dart';
+import '../services/user_profile_api.dart';
 
 final authConfigProvider = Provider<AuthConfig>((ref) {
   return AuthConfig.fromEnvironment();
@@ -70,6 +72,10 @@ final apiDioProvider = Provider<Dio>((ref) {
 
 final gistagServiceProvider = Provider<GistagService>((ref) {
   return ApiGistagService(ref.watch(apiDioProvider));
+});
+
+final userProfileApiProvider = Provider<UserProfileApi>((ref) {
+  return UserProfileApi(ref.watch(apiDioProvider));
 });
 
 enum AuthStatus { unauthenticated, authenticated }
@@ -166,6 +172,92 @@ class AuthController extends StateNotifier<AsyncValue<AuthSession>> {
   void dispose() {
     _tokenManager.onSessionExpired = null;
     super.dispose();
+  }
+}
+
+final userProfileControllerProvider =
+    StateNotifierProvider<UserProfileController, AsyncValue<UserProfile?>>((
+      ref,
+    ) {
+      final controller = UserProfileController(
+        ref.watch(userProfileApiProvider),
+      );
+      ref.listen(authControllerProvider, (_, next) {
+        final session = next.maybeWhen(
+          data: (value) => value,
+          orElse: () => null,
+        );
+        if (next.isLoading ||
+            session == null ||
+            session.status == AuthStatus.unauthenticated) {
+          controller.clear();
+        }
+      });
+      return controller;
+    });
+
+class UserProfileController extends StateNotifier<AsyncValue<UserProfile?>> {
+  UserProfileController(this._api) : super(const AsyncValue.data(null));
+
+  final UserProfileApi _api;
+
+  Future<UserProfile> load({bool force = false}) async {
+    final cached = state.maybeWhen(data: (value) => value, orElse: () => null);
+    if (!force && cached != null) {
+      return cached;
+    }
+
+    state = const AsyncValue.loading();
+    try {
+      final profile = await _api.fetchProfile();
+      state = AsyncValue.data(profile);
+      return profile;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
+  Future<UserProfile> submitOnboarding(OnboardingInput input) async {
+    state = const AsyncValue.loading();
+    try {
+      final profile = await _api.submitOnboarding(input);
+      state = AsyncValue.data(profile);
+      return profile;
+    } on UserProfileApiException catch (error, stackTrace) {
+      if (error.statusCode == 409) {
+        return load(force: true);
+      }
+      state = AsyncValue.error(error, stackTrace);
+      Error.throwWithStackTrace(error, stackTrace);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
+  Future<UserProfile> updateProfile({
+    UserGender? gender,
+    List<ExerciseType>? exerciseTypes,
+    ExerciseFrequency? exerciseFrequency,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final profile = await _api.updateProfile(
+        gender: gender,
+        exerciseTypes: exerciseTypes,
+        exerciseFrequency: exerciseFrequency,
+      );
+      state = AsyncValue.data(profile);
+      return profile;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
+  void clear() {
+    state = const AsyncValue.data(null);
   }
 }
 

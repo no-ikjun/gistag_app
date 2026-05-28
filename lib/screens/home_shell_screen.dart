@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../models/user_profile_models.dart';
 import '../providers/app_providers.dart';
 import '../widgets/common/gistag_footer.dart';
 import 'history_screen.dart';
@@ -44,6 +45,17 @@ class _HomeShellScreenState extends ConsumerState<HomeShellScreen>
       return;
     }
     final router = GoRouter.of(context);
+    final profile = await _loadProfile();
+    if (!mounted) {
+      return;
+    }
+    if (profile == null) {
+      return;
+    }
+    if (!profile.onboardingCompleted) {
+      router.go('/onboarding');
+      return;
+    }
     await ref.read(homeControllerProvider.notifier).refresh();
     if (!mounted) {
       return;
@@ -61,14 +73,55 @@ class _HomeShellScreenState extends ConsumerState<HomeShellScreen>
     }
   }
 
+  Future<UserProfile?> _loadProfile() async {
+    try {
+      return await ref.read(userProfileControllerProvider.notifier).load();
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedHomeTab = ref.watch(selectedHomeTabProvider);
+    final profileState = ref.watch(userProfileControllerProvider);
     final screens = [
       const HomeScreen(),
       const RankingScreen(),
       const HistoryScreen(),
     ];
+
+    if (profileState.isLoading && !profileState.hasValue) {
+      return const Scaffold(
+        body: SafeArea(child: Center(child: CircularProgressIndicator())),
+      );
+    }
+
+    if (profileState.hasError) {
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '프로필 정보를 불러오지 못했어요.',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: _refreshAndRestore,
+                    child: const Text('다시 시도'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: screens[selectedHomeTab],
