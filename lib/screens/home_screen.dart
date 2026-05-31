@@ -69,6 +69,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final homeState = ref.watch(homeControllerProvider);
     final nearbyState = ref.watch(nearbyPlacesControllerProvider);
+    final profile = ref.watch(userProfileControllerProvider).asData?.value;
+    final authUser = ref.watch(authControllerProvider).asData?.value.user;
     final nearbyPlaces = nearbyState.asData?.value;
     final mapConfig = ref.watch(mapConfigProvider);
 
@@ -91,6 +93,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final recentRecord = home.records.isNotEmpty
             ? home.records.first
             : null;
+        final userName = _displayName(
+          profile?.nickname,
+          authUser?.nickname,
+          home.user.name,
+        );
         const nfcDockHeight = 142.0;
 
         return SafeArea(
@@ -115,7 +122,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ).copyWith(bottom: 16 + nfcDockHeight),
                     children: [
                       _HomeHeader(
-                        userName: home.user.name,
+                        userName: userName,
                         onSettingsTap: () => context.push('/settings'),
                       ),
                       const SizedBox(height: 14),
@@ -192,6 +199,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _openNfcScan(BuildContext context) {
     context.go('/scan');
+  }
+
+  String _displayName(
+    String? profileNickname,
+    String? authNickname,
+    String fallback,
+  ) {
+    for (final value in [profileNickname, authNickname, fallback]) {
+      final trimmed = value?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        return trimmed;
+      }
+    }
+    return 'Gistag';
   }
 
   String _mapStatusMessage({
