@@ -191,8 +191,6 @@ class _TimerPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (elapsed.inSeconds / 3600).clamp(0.04, 1.0);
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
@@ -205,41 +203,24 @@ class _TimerPanel extends StatelessWidget {
         children: [
           SizedBox(
             width: 204,
-            height: 204,
-            child: Stack(
-              alignment: Alignment.center,
+            height: 150,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: 204,
-                  height: 204,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 12,
-                    strokeCap: StrokeCap.round,
-                    backgroundColor: const Color(0xFFF2EDEC),
-                    color: GistagColors.primary,
+                Text(
+                  _formatDuration(elapsed),
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    color: GistagColors.text,
+                    fontSize: elapsed.inHours > 0 ? 38 : 46,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _formatDuration(elapsed),
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(
-                            color: GistagColors.text,
-                            fontSize: elapsed.inHours > 0 ? 38 : 46,
-                            fontWeight: FontWeight.w800,
-                          ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '진행 시간',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 6),
+                Text(
+                  '진행 시간',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
