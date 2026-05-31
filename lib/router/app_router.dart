@@ -8,6 +8,7 @@ import '../screens/home_shell_screen.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/login/register_screen.dart';
 import '../screens/nfc_scan_screen.dart';
+import '../screens/onboarding_screen.dart';
 import '../screens/place_map_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/splash/splash_screen.dart';
@@ -38,6 +39,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeShellScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/settings',
