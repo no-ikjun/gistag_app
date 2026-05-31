@@ -515,19 +515,23 @@ class WorkoutFlowState {
     this.resolvedTag,
     this.activeSession,
     this.lastResult,
+    this.errorMessage,
   });
 
   final NfcTagResolution? resolvedTag;
   final WorkoutSession? activeSession;
   final WorkoutResult? lastResult;
+  final String? errorMessage;
 
   WorkoutFlowState copyWith({
     NfcTagResolution? resolvedTag,
     WorkoutSession? activeSession,
     WorkoutResult? lastResult,
+    String? errorMessage,
     bool clearResolvedTag = false,
     bool clearActiveSession = false,
     bool clearLastResult = false,
+    bool clearError = false,
   }) {
     return WorkoutFlowState(
       resolvedTag: clearResolvedTag ? null : resolvedTag ?? this.resolvedTag,
@@ -535,6 +539,7 @@ class WorkoutFlowState {
           ? null
           : activeSession ?? this.activeSession,
       lastResult: clearLastResult ? null : lastResult ?? this.lastResult,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
 }
@@ -559,7 +564,11 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
     state = const AsyncValue.loading();
     final result = await AsyncValue.guard(() async {
       final resolution = await _service.verifyNfcTag();
-      return previous.copyWith(resolvedTag: resolution, clearLastResult: true);
+      return previous.copyWith(
+        resolvedTag: resolution,
+        clearLastResult: true,
+        clearError: true,
+      );
     });
     state = result;
     return result.value?.resolvedTag;
@@ -572,6 +581,7 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
       return previous.copyWith(
         activeSession: session,
         clearActiveSession: session == null,
+        clearError: true,
       );
     });
     state = result;
@@ -586,6 +596,7 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
         activeSession: session,
         resolvedTag: resolution,
         clearLastResult: true,
+        clearError: true,
       );
     });
   }
@@ -600,15 +611,22 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
       return null;
     }
 
-    final result = await AsyncValue.guard(() async {
+    final previous = _value;
+    try {
       final workoutResult = await _service.endWorkout(session);
-      return _value.copyWith(
+      final next = previous.copyWith(
         lastResult: workoutResult,
         clearActiveSession: true,
+        clearError: true,
       );
-    });
-    state = result;
-    return result.value?.lastResult;
+      state = AsyncValue.data(next);
+      return workoutResult;
+    } catch (error) {
+      state = AsyncValue.data(
+        previous.copyWith(errorMessage: _workoutErrorMessage(error)),
+      );
+      return null;
+    }
   }
 
   Future<bool> cancelWorkout() async {
@@ -627,10 +645,19 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
       return previous.copyWith(
         clearActiveSession: true,
         clearResolvedTag: true,
+        clearError: true,
       );
     });
     state = result;
     return !result.hasError;
+  }
+
+  String _workoutErrorMessage(Object error) {
+    final message = error.toString();
+    if (message.trim().isEmpty) {
+      return '요청에 실패했어요. 최소 운동 시간은 60초입니다.';
+    }
+    return '요청에 실패했어요. 최소 운동 시간은 60초입니다.';
   }
 }
 
