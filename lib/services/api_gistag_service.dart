@@ -29,16 +29,39 @@ class ApiGistagService implements GistagService {
     xp: 0,
     streakDays: 0,
   );
+  UserStats? _stats;
 
   @override
   Future<HomeSnapshot> loadHome() async {
     final activeSession = await loadActiveWorkout();
+    final stats = _stats;
     return HomeSnapshot(
-      user: _user,
+      user: stats == null
+          ? _user
+          : _user.copyWith(
+              level: stats.level,
+              xp: stats.totalXp,
+              streakDays: stats.currentStreak,
+            ),
       recommendedPlaces: [if (activeSession != null) activeSession.place],
       weeklyGoalText: '오늘 운동 태그를 찍고 루틴을 이어가세요',
-      hasWorkedOutToday: false,
+      hasWorkedOutToday: stats?.completedWorkoutToday ?? false,
     );
+  }
+
+  @override
+  Future<UserStats> loadUserStats() async {
+    final data = await _requestJson(() {
+      return _dio.get<dynamic>('/users/me/stats');
+    });
+    final stats = _parseUserStats(data);
+    _stats = stats;
+    _user = _user.copyWith(
+      level: stats.level,
+      xp: stats.totalXp,
+      streakDays: stats.currentStreak,
+    );
+    return stats;
   }
 
   @override
@@ -119,6 +142,7 @@ class ApiGistagService implements GistagService {
 
   @override
   Future<WorkoutResult> endWorkout(WorkoutSession session) async {
+    final previousLevel = _stats?.level ?? _user.level;
     final data = await _requestJson(() {
       return _dio.post<dynamic>(
         '/workout-sessions/${session.id}/finish',
@@ -129,7 +153,6 @@ class ApiGistagService implements GistagService {
     final reward = _asMap(data['reward']);
     final level = _asInt(reward['level']);
     final totalXp = _asInt(reward['totalXp']);
-    final previousLevel = _user.level;
     _user = _user.copyWith(
       level: level,
       xp: totalXp,
@@ -175,17 +198,46 @@ class ApiGistagService implements GistagService {
   }
 
   @override
-  Future<List<RankingUser>> loadRanking() async {
-    return [
-      RankingUser(
-        rank: 1,
-        name: _user.name,
-        level: _user.level,
-        xp: _user.xp,
-        streakDays: _user.streakDays,
-        isMe: true,
-      ),
-    ];
+  Future<RankingPage> loadRanking({int limit = 20, int offset = 0}) async {
+    final data = await _requestJson(() {
+      return _dio.get<dynamic>(
+        '/rankings',
+        queryParameters: {'limit': limit, 'offset': offset},
+      );
+    });
+    final meData = data['me'];
+    final me = meData == null ? null : _parseRankingUser(_asMap(meData), true);
+    final items = data['items'];
+    return RankingPage(
+      items: items is List
+          ? [
+              for (final item in items)
+                _parseRankingUser(
+                  _asMap(item),
+                  me != null && _asString(_asMap(item)['userId']) == me.userId,
+                ),
+            ]
+          : const [],
+      me: me,
+      total: _asInt(data['total']),
+      limit: limit,
+      offset: offset,
+    );
+  }
+
+  @override
+  Future<WorkoutPeersSnapshot> loadActiveWorkoutPeers() async {
+    final data = await _requestJson(() {
+      return _dio.get<dynamic>('/workout-sessions/active/peers');
+    });
+    final place = data['place'];
+    final items = data['items'];
+    return WorkoutPeersSnapshot(
+      place: place == null ? null : _parsePlace(_asMap(place)),
+      items: items is List
+          ? [for (final item in items) _parseWorkoutPeer(_asMap(item))]
+          : const [],
+    );
   }
 
   Future<Map<String, dynamic>> _requestJson(
@@ -277,6 +329,47 @@ class ApiGistagService implements GistagService {
       startedAt: DateTime.parse(_asString(data['startedAt'])).toLocal(),
       duration: Duration(seconds: _asInt(data['durationSeconds'])),
       earnedXp: _asInt(data['earnedXp']),
+    );
+  }
+
+  UserStats _parseUserStats(Map<String, dynamic> data) {
+    return UserStats(
+      userId: _asString(data['userId']),
+      level: _asInt(data['level']),
+      totalXp: _asInt(data['totalXp']),
+      xpInCurrentLevel: _asInt(data['xpInCurrentLevel']),
+      xpToNextLevel: _asInt(data['xpToNextLevel']),
+      xpPerLevel: _asInt(data['xpPerLevel']),
+      currentStreak: _asInt(data['currentStreak']),
+      lastWorkoutDate: data['lastWorkoutDate'] as String?,
+      totalWorkouts: _asInt(data['totalWorkouts']),
+      totalDuration: Duration(seconds: _asInt(data['totalDurationSeconds'])),
+    );
+  }
+
+  RankingUser _parseRankingUser(Map<String, dynamic> data, bool isMe) {
+    return RankingUser(
+      rank: _asInt(data['rank']),
+      userId: _asString(data['userId']),
+      name: _asString(data['nickname'], fallback: 'Gistag'),
+      level: _asInt(data['level']),
+      xp: _asInt(data['totalXp']),
+      streakDays: _asInt(data['currentStreak']),
+      isMe: isMe,
+    );
+  }
+
+  WorkoutPeer _parseWorkoutPeer(Map<String, dynamic> data) {
+    return WorkoutPeer(
+      userId: _asString(data['userId']),
+      name: _asString(data['nickname'], fallback: 'Gistag'),
+      level: _asInt(data['level']),
+      xp: _asInt(data['totalXp']),
+      streakDays: _asInt(data['currentStreak']),
+      sessionStartedAt: DateTime.parse(
+        _asString(data['sessionStartedAt']),
+      ).toLocal(),
+      duration: Duration(seconds: _asInt(data['durationSeconds'])),
     );
   }
 

@@ -4,6 +4,7 @@ import 'nfc_payload_parser.dart';
 
 class MockGistagService implements GistagService {
   GistagUser? _user;
+  UserStats? _stats;
   WorkoutSession? _activeSession;
 
   final List<Place> _places = const [
@@ -51,13 +52,30 @@ class MockGistagService implements GistagService {
     final user =
         _user ??
         const GistagUser(name: '최익준', level: 4, xp: 1280, streakDays: 7);
+    final stats = _stats ?? _defaultStats(user);
+    _stats = stats;
     _user = user;
     return HomeSnapshot(
-      user: user,
+      user: user.copyWith(
+        level: stats.level,
+        xp: stats.totalXp,
+        streakDays: stats.currentStreak,
+      ),
       recommendedPlaces: _places,
       weeklyGoalText: '이번 주 목표까지 2번 남았어요',
-      hasWorkedOutToday: false,
+      hasWorkedOutToday: stats.completedWorkoutToday,
     );
+  }
+
+  @override
+  Future<UserStats> loadUserStats() async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    final user =
+        _user ??
+        const GistagUser(name: '최익준', level: 4, xp: 1280, streakDays: 7);
+    final stats = _stats ?? _defaultStats(user);
+    _stats = stats;
+    return stats;
   }
 
   @override
@@ -115,11 +133,14 @@ class MockGistagService implements GistagService {
     const earnedXp = 80;
     final totalXp = current.xp + earnedXp;
     final leveledUp = totalXp >= 1320;
+    final nextLevel = leveledUp ? current.level + 1 : current.level;
+    final nextStreak = current.streakDays + 1;
     _user = current.copyWith(
       xp: totalXp,
-      level: leveledUp ? current.level + 1 : current.level,
-      streakDays: current.streakDays + 1,
+      level: nextLevel,
+      streakDays: nextStreak,
     );
+    _stats = _statsFromUser(_user!, totalWorkouts: 13);
     _activeSession = null;
 
     return WorkoutResult(
@@ -175,14 +196,15 @@ class MockGistagService implements GistagService {
   }
 
   @override
-  Future<List<RankingUser>> loadRanking() async {
+  Future<RankingPage> loadRanking({int limit = 20, int offset = 0}) async {
     await Future<void>.delayed(const Duration(milliseconds: 250));
     final me =
         _user ??
         const GistagUser(name: '최익준', level: 4, xp: 1280, streakDays: 7);
-    return [
+    final items = [
       const RankingUser(
         rank: 1,
+        userId: 'mock-runner',
         name: '러닝메이트',
         level: 7,
         xp: 2430,
@@ -190,6 +212,7 @@ class MockGistagService implements GistagService {
       ),
       const RankingUser(
         rank: 2,
+        userId: 'mock-steady',
         name: '꾸준왕',
         level: 6,
         xp: 2110,
@@ -197,6 +220,7 @@ class MockGistagService implements GistagService {
       ),
       RankingUser(
         rank: 3,
+        userId: 'mock-me',
         name: me.name,
         level: me.level,
         xp: me.xp,
@@ -205,11 +229,78 @@ class MockGistagService implements GistagService {
       ),
       const RankingUser(
         rank: 4,
+        userId: 'mock-gym',
         name: '헬스루틴',
         level: 4,
         xp: 1160,
         streakDays: 5,
       ),
     ];
+    final pageItems = items.skip(offset).take(limit).toList();
+    return RankingPage(
+      items: pageItems,
+      me: items.firstWhere((item) => item.isMe),
+      total: items.length,
+      limit: limit,
+      offset: offset,
+    );
+  }
+
+  @override
+  Future<WorkoutPeersSnapshot> loadActiveWorkoutPeers() async {
+    await Future<void>.delayed(const Duration(milliseconds: 220));
+    final activeSession = _activeSession;
+    if (activeSession == null) {
+      return const WorkoutPeersSnapshot(place: null, items: []);
+    }
+    final now = DateTime.now();
+    return WorkoutPeersSnapshot(
+      place: activeSession.place,
+      items: [
+        WorkoutPeer(
+          userId: 'mock-peer-1',
+          name: 'bob',
+          level: 3,
+          xp: 720,
+          streakDays: 4,
+          sessionStartedAt: now.subtract(const Duration(minutes: 18)),
+          duration: const Duration(minutes: 18),
+        ),
+        WorkoutPeer(
+          userId: 'mock-peer-2',
+          name: 'campus-runner',
+          level: 5,
+          xp: 1460,
+          streakDays: 9,
+          sessionStartedAt: now.subtract(const Duration(minutes: 7)),
+          duration: const Duration(minutes: 7),
+        ),
+      ],
+    );
+  }
+
+  UserStats _defaultStats(GistagUser user) {
+    return _statsFromUser(user, totalWorkouts: 12);
+  }
+
+  UserStats _statsFromUser(GistagUser user, {required int totalWorkouts}) {
+    const xpPerLevel = 300;
+    final today = DateTime.now().toUtc().add(const Duration(hours: 9));
+    final lastWorkoutDate =
+        '${today.year.toString().padLeft(4, '0')}-'
+        '${today.month.toString().padLeft(2, '0')}-'
+        '${today.day.toString().padLeft(2, '0')}';
+    return UserStats(
+      userId: 'mock-me',
+      level: user.level,
+      totalXp: user.xp,
+      xpInCurrentLevel: user.xp % xpPerLevel,
+      xpToNextLevel: xpPerLevel - (user.xp % xpPerLevel),
+      xpPerLevel: xpPerLevel,
+      currentStreak: user.streakDays,
+      lastWorkoutDate: lastWorkoutDate,
+      totalWorkouts: totalWorkouts,
+      totalDuration: const Duration(hours: 6),
+    );
   }
 }

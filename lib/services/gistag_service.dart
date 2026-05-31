@@ -3,6 +3,8 @@ import '../models/gistag_models.dart';
 abstract class GistagService {
   Future<HomeSnapshot> loadHome();
 
+  Future<UserStats> loadUserStats();
+
   Future<List<Place>> loadNearbyPlaces({
     required double latitude,
     required double longitude,
@@ -24,5 +26,7 @@ abstract class GistagService {
 
   Future<List<WorkoutRecord>> loadRecords();
 
-  Future<List<RankingUser>> loadRanking();
+  Future<RankingPage> loadRanking({int limit = 20, int offset = 0});
+
+  Future<WorkoutPeersSnapshot> loadActiveWorkoutPeers();
 }

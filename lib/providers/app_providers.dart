@@ -265,15 +265,15 @@ class UserProfileController extends StateNotifier<AsyncValue<UserProfile?>> {
 class HomeData {
   const HomeData({
     required this.user,
+    required this.stats,
     required this.snapshot,
     required this.records,
-    required this.ranking,
   });
 
   final GistagUser user;
+  final UserStats stats;
   final HomeSnapshot snapshot;
   final List<WorkoutRecord> records;
-  final List<RankingUser> ranking;
 }
 
 final homeControllerProvider =
@@ -289,16 +289,97 @@ class HomeController extends StateNotifier<AsyncValue<HomeData>> {
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
+      final stats = await _service.loadUserStats();
       final snapshot = await _service.loadHome();
       final records = await _service.loadRecords();
-      final ranking = await _service.loadRanking();
       return HomeData(
-        user: snapshot.user,
+        user: snapshot.user.copyWith(
+          level: stats.level,
+          xp: stats.totalXp,
+          streakDays: stats.currentStreak,
+        ),
+        stats: stats,
         snapshot: snapshot,
         records: records,
-        ranking: ranking,
       );
     });
+  }
+}
+
+final rankingControllerProvider =
+    StateNotifierProvider<RankingController, AsyncValue<RankingPage>>((ref) {
+      return RankingController(ref.watch(gistagServiceProvider));
+    });
+
+class RankingController extends StateNotifier<AsyncValue<RankingPage>> {
+  RankingController(this._service) : super(const AsyncValue.loading());
+
+  static const int pageSize = 20;
+
+  final GistagService _service;
+  bool _loadingMore = false;
+
+  Future<void> load({bool force = false}) async {
+    if (!force && state.hasValue) {
+      return;
+    }
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() {
+      return _service.loadRanking(limit: pageSize, offset: 0);
+    });
+  }
+
+  Future<void> loadMore() async {
+    final current = state.maybeWhen(data: (value) => value, orElse: () => null);
+    if (current == null || !current.hasMore || _loadingMore) {
+      return;
+    }
+
+    _loadingMore = true;
+    final previous = current;
+    final next = await AsyncValue.guard(() {
+      return _service.loadRanking(
+        limit: previous.limit,
+        offset: previous.offset + previous.items.length,
+      );
+    });
+    state = next.when(
+      data: (page) => AsyncValue.data(
+        RankingPage(
+          items: [...previous.items, ...page.items],
+          me: page.me ?? previous.me,
+          total: page.total,
+          limit: page.limit,
+          offset: previous.offset,
+        ),
+      ),
+      error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
+      loading: () => AsyncValue.data(previous),
+    );
+    _loadingMore = false;
+  }
+}
+
+final workoutPeersControllerProvider =
+    StateNotifierProvider<
+      WorkoutPeersController,
+      AsyncValue<WorkoutPeersSnapshot>
+    >((ref) {
+      return WorkoutPeersController(ref.watch(gistagServiceProvider));
+    });
+
+class WorkoutPeersController
+    extends StateNotifier<AsyncValue<WorkoutPeersSnapshot>> {
+  WorkoutPeersController(this._service) : super(const AsyncValue.loading());
+
+  final GistagService _service;
+
+  Future<void> refresh() async {
+    state = await AsyncValue.guard(_service.loadActiveWorkoutPeers);
+  }
+
+  void clear() {
+    state = const AsyncValue.data(WorkoutPeersSnapshot(place: null, items: []));
   }
 }
 
