@@ -14,6 +14,7 @@ class RankingScreen extends ConsumerWidget {
 
     return SafeArea(
       child: ListView(
+        physics: const ClampingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
         children: [
           const AppLogo(width: 110),

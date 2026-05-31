@@ -53,6 +53,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(28, 28, 28, 28),
           children: [
             GistagHeader(

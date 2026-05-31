@@ -109,6 +109,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
           children: [
             _WorkoutHeader(session: session),

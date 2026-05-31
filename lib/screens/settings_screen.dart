@@ -31,6 +31,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(24, 10, 24, 32),
           children: [
             GistagHeader(

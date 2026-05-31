@@ -86,6 +86,7 @@ class _TagSuccessScreenState extends ConsumerState<TagSuccessScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(24, 10, 24, 28),
           children: [
             GistagHeader(

@@ -56,6 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(28, 54, 28, 28),
           children: [
             const AppLogo(width: 132),
