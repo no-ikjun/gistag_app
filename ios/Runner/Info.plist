@@ -44,6 +44,8 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>주변 운동 장소를 지도에 표시하기 위해 현재 위치를 사용합니다.</string>
+	<key>NFCReaderUsageDescription</key>
+	<string>운동 장소 확인과 태그 등록을 위해 NFC 태그를 읽고 씁니다.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

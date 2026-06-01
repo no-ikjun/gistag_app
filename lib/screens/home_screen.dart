@@ -124,6 +124,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _HomeHeader(
                         userName: userName,
                         onSettingsTap: () => context.push('/settings'),
+                        onLogoLongPress: () => context.push('/admin/nfc-tags'),
                       ),
                       const SizedBox(height: 14),
                       Text(
@@ -265,10 +266,15 @@ class _HomeError extends StatelessWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.userName, required this.onSettingsTap});
+  const _HomeHeader({
+    required this.userName,
+    required this.onSettingsTap,
+    required this.onLogoLongPress,
+  });
 
   final String userName;
   final VoidCallback onSettingsTap;
+  final VoidCallback onLogoLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -276,7 +282,11 @@ class _HomeHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GistagHeader(
-          center: const AppLogo(width: 104),
+          center: GestureDetector(
+            onLongPress: onLogoLongPress,
+            behavior: HitTestBehavior.opaque,
+            child: const AppLogo(width: 104),
+          ),
           trailing: Semantics(
             button: true,
             label: '설정',

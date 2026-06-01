@@ -7,6 +7,7 @@ import '../screens/active_workout_screen.dart';
 import '../screens/home_shell_screen.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/login/register_screen.dart';
+import '../screens/nfc_admin_screen.dart';
 import '../screens/nfc_scan_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/place_map_screen.dart';
@@ -55,6 +56,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/scan',
         builder: (context, state) => const NfcScanScreen(),
+      ),
+      GoRoute(
+        path: '/admin/nfc-tags',
+        builder: (context, state) => const NfcAdminScreen(),
       ),
       GoRoute(
         path: '/tag-success',
