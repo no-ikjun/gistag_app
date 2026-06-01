@@ -88,20 +88,62 @@ class ApiGistagService implements GistagService {
 
   @override
   Future<NfcTagResolution> verifyNfcTag({
-    String ndefPayload = 'gistag://tag/GISTAG_TAG_DEMO_001',
+    String? ndefPayload,
     String? hardwareUid,
   }) async {
-    final tagCode = parseGistagTagCode(ndefPayload);
+    String? tagCode;
+    if (ndefPayload != null) {
+      try {
+        tagCode = parseGistagTagCode(ndefPayload);
+      } on NfcPayloadFormatException {
+        if (hardwareUid == null) {
+          rethrow;
+        }
+      }
+    }
+    if (tagCode == null && hardwareUid == null) {
+      throw const GistagApiException('NFC 태그 식별값을 찾지 못했어요.');
+    }
+
     final data = await _requestJson(() {
       return _dio.post<dynamic>(
         '/tags/resolve',
         data: {
-          'tagCode': tagCode,
+          if (tagCode != null) 'tagCode': tagCode,
           if (hardwareUid != null) 'hardwareUid': hardwareUid,
         },
       );
     });
     return _parseResolution(data);
+  }
+
+  @override
+  Future<NfcTagRegistration> registerNfcTag({
+    required String hardwareUid,
+    required NfcTagPlaceDraft place,
+    List<String> technologies = const [],
+    String? ndefPayload,
+  }) async {
+    final data = await _requestJson(() {
+      return _dio.post<dynamic>(
+        '/admin/nfc-tags/register',
+        data: {
+          'hardwareUid': hardwareUid,
+          'tagMetadata': {
+            'technologies': technologies,
+            if (ndefPayload != null) 'ndefPayload': ndefPayload,
+          },
+          'place': {
+            'name': place.name,
+            'description': place.description,
+            'workoutType': place.workoutType,
+            'latitude': place.latitude,
+            'longitude': place.longitude,
+          },
+        },
+      );
+    });
+    return _parseRegistration(data);
   }
 
   @override
@@ -284,6 +326,35 @@ class ApiGistagService implements GistagService {
       place: _parsePlace(place),
       canStartWorkout: data['canStartWorkout'] == true,
       blockedReason: data['blockedReason'] as String?,
+    );
+  }
+
+  NfcTagRegistration _parseRegistration(Map<String, dynamic> data) {
+    final tag = _asMap(data['tag']);
+    final place = _asMap(data['place']);
+    final metadata = data['tagMetadata'];
+    final technologies = metadata is Map && metadata['technologies'] is List
+        ? [for (final item in metadata['technologies'] as List) item.toString()]
+        : const <String>[];
+    final hardwareUid = _asString(
+      tag['hardwareUid'],
+      fallback: _asString(
+        data['hardwareUid'],
+        fallback: _asString(tag['code']),
+      ),
+    );
+    return NfcTagRegistration(
+      tag: NfcTag(
+        id: _asInt(tag['id']),
+        code: _asString(tag['code'], fallback: hardwareUid),
+        status: _asString(tag['status'], fallback: 'ACTIVE'),
+      ),
+      place: _parsePlace(place),
+      hardwareUid: hardwareUid,
+      technologies: technologies,
+      ndefPayload:
+          data['ndefPayload'] as String? ??
+          (metadata is Map ? metadata['ndefPayload'] as String? : null),
     );
   }
 

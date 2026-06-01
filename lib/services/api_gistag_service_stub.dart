@@ -23,8 +23,16 @@ class ApiGistagService implements GistagService {
 
   @override
   Future<NfcTagResolution> verifyNfcTag({
-    String ndefPayload = 'gistag://tag/GISTAG_TAG_DEMO_001',
+    String? ndefPayload,
     String? hardwareUid,
+  }) async => throw _unsupported;
+
+  @override
+  Future<NfcTagRegistration> registerNfcTag({
+    required String hardwareUid,
+    required NfcTagPlaceDraft place,
+    List<String> technologies = const [],
+    String? ndefPayload,
   }) async => throw _unsupported;
 
   @override

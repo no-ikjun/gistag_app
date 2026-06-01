@@ -97,12 +97,44 @@ class Place {
   final double? distanceKm;
 }
 
+class NfcTagPlaceDraft {
+  const NfcTagPlaceDraft({
+    required this.name,
+    required this.description,
+    required this.workoutType,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  final String name;
+  final String description;
+  final String workoutType;
+  final double latitude;
+  final double longitude;
+}
+
 class NfcTag {
   const NfcTag({required this.id, required this.code, required this.status});
 
   final int id;
   final String code;
   final String status;
+}
+
+class NfcTagRegistration {
+  const NfcTagRegistration({
+    required this.tag,
+    required this.place,
+    required this.hardwareUid,
+    required this.technologies,
+    this.ndefPayload,
+  });
+
+  final NfcTag tag;
+  final Place place;
+  final String hardwareUid;
+  final List<String> technologies;
+  final String? ndefPayload;
 }
 
 class NfcTagResolution {

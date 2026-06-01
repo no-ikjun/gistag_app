@@ -554,6 +554,10 @@ class WorkoutFlowState {
   }
 }
 
+final demoNfcTagResolutionProvider = StateProvider<NfcTagResolution?>(
+  (ref) => null,
+);
+
 final workoutControllerProvider =
     StateNotifierProvider<WorkoutController, AsyncValue<WorkoutFlowState>>((
       ref,
@@ -561,15 +565,33 @@ final workoutControllerProvider =
       return WorkoutController(
         ref.watch(gistagServiceProvider),
         ref.watch(gistagNfcServiceProvider),
+        ref.watch(demoNfcTagResolutionProvider),
       );
     });
 
 class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
-  WorkoutController(this._service, this._nfcService)
+  WorkoutController(this._service, this._nfcService, this._demoResolution)
     : super(const AsyncValue.data(WorkoutFlowState()));
+
+  static const _demoHardwareUid = 'DEMO-NFC-TAG';
+  static const _demoTagCode = 'GISTAG_TAG_DEMO_001';
+  static const _demoSessionPrefix = 'demo-session-';
+  static const _demoPlace = Place(
+    id: 'gist-demo-place',
+    name: 'GIST 운동 시연 공간',
+    description: 'NFC 시연용 운동 장소',
+    workoutType: '헬스',
+    distance: '0m',
+    latitude: 35.2131,
+    longitude: 126.8378,
+    distanceText: '시연 모드',
+    estimatedDurationMinutes: 60,
+    distanceKm: 0,
+  );
 
   final GistagService _service;
   final GistagNfcService _nfcService;
+  final NfcTagResolution? _demoResolution;
 
   WorkoutFlowState get _value => state.value ?? const WorkoutFlowState();
 
@@ -578,6 +600,13 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
     state = const AsyncValue.loading();
     final result = await AsyncValue.guard(() async {
       final tag = await _nfcService.readTag();
+      if (_isDemoTag(tag.hardwareUid)) {
+        return previous.copyWith(
+          resolvedTag: _activeDemoResolution,
+          clearLastResult: true,
+          clearError: true,
+        );
+      }
       final resolution = await _service.verifyNfcTag(
         ndefPayload: tag.ndefPayload,
         hardwareUid: tag.hardwareUid,
@@ -609,6 +638,14 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
     final previous = _value;
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
+      if (_isDemoResolution(resolution)) {
+        return previous.copyWith(
+          activeSession: _demoSession(resolution),
+          resolvedTag: resolution,
+          clearLastResult: true,
+          clearError: true,
+        );
+      }
       final session = await _service.startWorkout(resolution);
       return previous.copyWith(
         activeSession: session,
@@ -631,6 +668,16 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
 
     final previous = _value;
     try {
+      if (_isDemoSession(session)) {
+        final workoutResult = _demoWorkoutResult(session);
+        final next = previous.copyWith(
+          lastResult: workoutResult,
+          clearActiveSession: true,
+          clearError: true,
+        );
+        state = AsyncValue.data(next);
+        return workoutResult;
+      }
       final workoutResult = await _service.endWorkout(session);
       final next = previous.copyWith(
         lastResult: workoutResult,
@@ -659,7 +706,9 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
 
     final previous = _value;
     final result = await AsyncValue.guard(() async {
-      await _service.cancelWorkout(session);
+      if (!_isDemoSession(session)) {
+        await _service.cancelWorkout(session);
+      }
       return previous.copyWith(
         clearActiveSession: true,
         clearResolvedTag: true,
@@ -668,6 +717,54 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
     });
     state = result;
     return !result.hasError;
+  }
+
+  bool _isDemoTag(String? hardwareUid) => hardwareUid == _demoHardwareUid;
+
+  bool _isDemoResolution(NfcTagResolution resolution) {
+    return resolution.tag.code == _demoTagCode ||
+        resolution.tag.code == _demoHardwareUid;
+  }
+
+  bool _isDemoSession(WorkoutSession session) {
+    return session.id.startsWith(_demoSessionPrefix);
+  }
+
+  NfcTagResolution get _activeDemoResolution {
+    final registered = _demoResolution;
+    if (registered != null) {
+      return registered;
+    }
+    return const NfcTagResolution(
+      tag: NfcTag(id: 0, code: _demoTagCode, status: 'ACTIVE'),
+      place: _demoPlace,
+      canStartWorkout: true,
+    );
+  }
+
+  WorkoutSession _demoSession(NfcTagResolution resolution) {
+    return WorkoutSession(
+      id: '$_demoSessionPrefix${DateTime.now().millisecondsSinceEpoch}',
+      place: resolution.place,
+      startedAt: DateTime.now(),
+      startedByTagCode: resolution.tag.code,
+    );
+  }
+
+  WorkoutResult _demoWorkoutResult(WorkoutSession session) {
+    final duration = DateTime.now().difference(session.startedAt);
+    return WorkoutResult(
+      place: session.place,
+      duration: duration < const Duration(seconds: 1)
+          ? const Duration(minutes: 1)
+          : duration,
+      earnedXp: 80,
+      level: 4,
+      leveledUp: false,
+      streakDays: 8,
+      totalXp: 1360,
+      streakUpdated: true,
+    );
   }
 
   String _workoutErrorMessage(Object error) {

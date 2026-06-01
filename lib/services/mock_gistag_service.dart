@@ -90,15 +90,52 @@ class MockGistagService implements GistagService {
 
   @override
   Future<NfcTagResolution> verifyNfcTag({
-    String ndefPayload = 'gistag://tag/GISTAG_TAG_DEMO_001',
+    String? ndefPayload,
     String? hardwareUid,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 1200));
-    final tagCode = parseGistagTagCode(ndefPayload);
+    var tagCode = hardwareUid ?? 'GISTAG_TAG_DEMO_001';
+    if (ndefPayload != null) {
+      try {
+        tagCode = parseGistagTagCode(ndefPayload);
+      } on NfcPayloadFormatException {
+        if (hardwareUid == null) {
+          rethrow;
+        }
+      }
+    }
     return NfcTagResolution(
       tag: NfcTag(id: 1, code: tagCode, status: 'ACTIVE'),
       place: _places.first,
       canStartWorkout: true,
+    );
+  }
+
+  @override
+  Future<NfcTagRegistration> registerNfcTag({
+    required String hardwareUid,
+    required NfcTagPlaceDraft place,
+    List<String> technologies = const [],
+    String? ndefPayload,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    final registeredPlace = Place(
+      id: 'mock-${DateTime.now().millisecondsSinceEpoch}',
+      name: place.name,
+      description: place.description,
+      workoutType: place.workoutType,
+      distance: '0m',
+      latitude: place.latitude,
+      longitude: place.longitude,
+      distanceText: '등록된 NFC 태그 위치',
+      distanceKm: 0,
+    );
+    return NfcTagRegistration(
+      tag: NfcTag(id: 1, code: hardwareUid, status: 'ACTIVE'),
+      place: registeredPlace,
+      hardwareUid: hardwareUid,
+      technologies: technologies,
+      ndefPayload: ndefPayload,
     );
   }
 

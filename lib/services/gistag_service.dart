@@ -12,8 +12,15 @@ abstract class GistagService {
   });
 
   Future<NfcTagResolution> verifyNfcTag({
-    String ndefPayload = 'gistag://tag/GISTAG_TAG_DEMO_001',
+    String? ndefPayload,
     String? hardwareUid,
+  });
+
+  Future<NfcTagRegistration> registerNfcTag({
+    required String hardwareUid,
+    required NfcTagPlaceDraft place,
+    List<String> technologies = const [],
+    String? ndefPayload,
   });
 
   Future<WorkoutSession?> loadActiveWorkout();
