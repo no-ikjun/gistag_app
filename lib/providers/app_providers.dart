@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../config/admin_config.dart';
 import '../config/auth_config.dart';
 import '../config/map_config.dart';
 import '../models/auth_models.dart';
@@ -17,6 +18,7 @@ import '../services/auth_repository.dart';
 import '../services/auth_token_manager.dart';
 import '../services/auth_token_storage.dart';
 import '../services/gistag_service.dart';
+import '../services/gistag_nfc_service.dart';
 import '../services/infoteam_idp_auth_service.dart';
 import '../services/user_profile_api.dart';
 
@@ -26,6 +28,10 @@ final authConfigProvider = Provider<AuthConfig>((ref) {
 
 final mapConfigProvider = Provider<MapConfig>((ref) {
   return MapConfig.fromEnvironment();
+});
+
+final adminConfigProvider = Provider<AdminConfig>((ref) {
+  return AdminConfig.fromEnvironment();
 });
 
 final authDioProvider = Provider<Dio>((ref) {
@@ -72,6 +78,10 @@ final apiDioProvider = Provider<Dio>((ref) {
 
 final gistagServiceProvider = Provider<GistagService>((ref) {
   return ApiGistagService(ref.watch(apiDioProvider));
+});
+
+final gistagNfcServiceProvider = Provider<GistagNfcService>((ref) {
+  return NfcManagerGistagNfcService();
 });
 
 final userProfileApiProvider = Provider<UserProfileApi>((ref) {
@@ -462,14 +472,18 @@ final workoutControllerProvider =
     StateNotifierProvider<WorkoutController, AsyncValue<WorkoutFlowState>>((
       ref,
     ) {
-      return WorkoutController(ref.watch(gistagServiceProvider));
+      return WorkoutController(
+        ref.watch(gistagServiceProvider),
+        ref.watch(gistagNfcServiceProvider),
+      );
     });
 
 class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
-  WorkoutController(this._service)
+  WorkoutController(this._service, this._nfcService)
     : super(const AsyncValue.data(WorkoutFlowState()));
 
   final GistagService _service;
+  final GistagNfcService _nfcService;
 
   WorkoutFlowState get _value => state.value ?? const WorkoutFlowState();
 
@@ -477,7 +491,11 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
     final previous = _value;
     state = const AsyncValue.loading();
     final result = await AsyncValue.guard(() async {
-      final resolution = await _service.verifyNfcTag();
+      final tag = await _nfcService.readTag();
+      final resolution = await _service.verifyNfcTag(
+        ndefPayload: tag.ndefPayload,
+        hardwareUid: tag.hardwareUid,
+      );
       return previous.copyWith(resolvedTag: resolution, clearLastResult: true);
     });
     state = result;
