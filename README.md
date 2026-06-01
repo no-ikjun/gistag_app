@@ -9,10 +9,14 @@ Create a local `.env` from `.env.example`. The app loads it at startup with
 
 Required keys:
 
-- `GISTAG_API_BASE_URL`
+- `GISTAG_API_DEBUG_BASE_URL`
+- `GISTAG_API_PROD_BASE_URL`
 - `GISTAG_IDP_AUTHORIZE_URL` (`https://api.account.gistory.me/oauth/authorize`)
 - `GISTAG_IDP_CLIENT_ID`
 - `GISTAG_IDP_REDIRECT_URI`
+
+Debug/profile builds use `GISTAG_API_DEBUG_BASE_URL`. Release builds, including
+`flutter build ipa --release`, use `GISTAG_API_PROD_BASE_URL`.
 
 The default mobile redirect URI is `gistag://oauth/callback`. Android and iOS
 are currently configured for `gistag://oauth/callback`.

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthConfig {
@@ -19,13 +20,7 @@ class AuthConfig {
     );
 
     return AuthConfig(
-      apiBaseUrl: _read(
-        'GISTAG_API_BASE_URL',
-        fallback: const String.fromEnvironment(
-          'GISTAG_API_BASE_URL',
-          defaultValue: 'http://localhost:3000',
-        ),
-      ),
+      apiBaseUrl: _resolveApiBaseUrl(),
       idpAuthorizeUrl: _read(
         'GISTAG_IDP_AUTHORIZE_URL',
         fallback: const String.fromEnvironment(
@@ -61,6 +56,27 @@ class AuthConfig {
   String get redirectScheme => redirectUriValue.scheme;
 
   bool get canUseInfoteamLogin => idpClientId.trim().isNotEmpty;
+
+  static String _resolveApiBaseUrl() {
+    final selectedKey = kReleaseMode
+        ? 'GISTAG_API_PROD_BASE_URL'
+        : 'GISTAG_API_DEBUG_BASE_URL';
+    final selectedFallback = kReleaseMode
+        ? const String.fromEnvironment('GISTAG_API_PROD_BASE_URL')
+        : const String.fromEnvironment('GISTAG_API_DEBUG_BASE_URL');
+    final selected = _read(selectedKey, fallback: selectedFallback);
+    if (selected.trim().isNotEmpty) {
+      return selected;
+    }
+
+    return _read(
+      'GISTAG_API_BASE_URL',
+      fallback: const String.fromEnvironment(
+        'GISTAG_API_BASE_URL',
+        defaultValue: 'http://localhost:3000',
+      ),
+    );
+  }
 
   static String _read(String key, {required String fallback}) {
     if (dotenv.isInitialized) {
