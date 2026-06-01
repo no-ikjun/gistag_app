@@ -20,6 +20,7 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Timer? _timer;
+  Timer? _peersTimer;
   Duration _elapsed = Duration.zero;
   bool _ending = false;
   bool _cancelling = false;
@@ -34,12 +35,27 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       }
       setState(() => _elapsed = DateTime.now().difference(session.startedAt));
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshPeers();
+      _peersTimer = Timer.periodic(
+        const Duration(seconds: 15),
+        (_) => _refreshPeers(),
+      );
+    });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _peersTimer?.cancel();
     super.dispose();
+  }
+
+  void _refreshPeers() {
+    if (!mounted) {
+      return;
+    }
+    ref.read(workoutPeersControllerProvider.notifier).refresh();
   }
 
   Future<void> _endWorkout() async {
@@ -96,7 +112,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   @override
   Widget build(BuildContext context) {
     final workoutState = ref.watch(workoutControllerProvider);
-    final session = workoutState.value?.activeSession;
+    final peersState = ref.watch(workoutPeersControllerProvider);
+    final flowState = workoutState.value;
+    final session = flowState?.activeSession;
+    final errorMessage = flowState?.errorMessage;
 
     if (session == null) {
       return const Scaffold(body: Center(child: Text('진행 중인 운동이 없어요.')));
@@ -109,18 +128,23 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
           children: [
             _WorkoutHeader(session: session),
-            const SizedBox(height: 22),
+            const SizedBox(height: 14),
             _TimerPanel(elapsed: elapsed),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             _SessionCard(session: session, elapsed: elapsed),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
+            _PeersSection(peersState: peersState),
+            const SizedBox(height: 12),
             _MinimumDurationNotice(canFinish: canFinish),
-            if (workoutState.hasError) ...[
+            if (workoutState.hasError || errorMessage != null) ...[
               const SizedBox(height: 12),
-              const _ErrorNotice(message: '요청에 실패했어요. 최소 운동 시간은 60초입니다.'),
+              _ErrorNotice(
+                message: errorMessage ?? '요청에 실패했어요. 최소 운동 시간은 60초입니다.',
+              ),
             ],
           ],
         ),
@@ -128,8 +152,14 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       bottomNavigationBar: GistagFixedBottomActions(
         children: [
           GistagButton(
-            label: _ending ? '종료 중' : '운동 종료',
-            onPressed: _ending || _cancelling ? null : _endWorkout,
+            label: _ending
+                ? '종료 중'
+                : canFinish
+                ? '운동 종료'
+                : '60초 후 종료 가능',
+            onPressed: _ending || _cancelling || !canFinish
+                ? null
+                : _endWorkout,
           ),
           const SizedBox(height: 10),
           GistagButton(
@@ -190,73 +220,66 @@ class _TimerPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (elapsed.inSeconds / 3600).clamp(0.04, 1.0);
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: GistagColors.border),
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 204,
-            height: 204,
-            child: Stack(
-              alignment: Alignment.center,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 204,
-                  height: 204,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 12,
-                    strokeCap: StrokeCap.round,
-                    backgroundColor: const Color(0xFFF2EDEC),
-                    color: GistagColors.primary,
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
+                Row(
                   children: [
-                    Text(
-                      _formatDuration(elapsed),
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(
-                            color: GistagColors.text,
-                            fontSize: elapsed.inHours > 0 ? 38 : 46,
-                            fontWeight: FontWeight.w800,
-                          ),
+                    const Icon(
+                      Icons.timer_outlined,
+                      color: GistagColors.primaryDark,
+                      size: 18,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(width: 6),
                     Text(
                       '진행 시간',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        color: GistagColors.primaryDark,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 6),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _formatDuration(elapsed),
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      color: GistagColors.text,
+                      fontSize: elapsed.inHours > 0 ? 34 : 40,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(
-                child: _TimerMetric(
-                  label: '분',
-                  value: elapsed.inMinutes.toString(),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _TimerMetric(label: '저장 기준', value: '60초'),
-              ),
-            ],
+          const SizedBox(width: 14),
+          SizedBox(
+            width: 96,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _TimerMetric(label: '분', value: elapsed.inMinutes.toString()),
+                const SizedBox(height: 8),
+                const _TimerMetric(label: '저장 기준', value: '60초'),
+              ],
+            ),
           ),
         ],
       ),
@@ -273,10 +296,11 @@ class _TimerMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 10),
       decoration: BoxDecoration(
         color: const Color(0xFFF7F3F2),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: GistagColors.border),
       ),
       child: Column(
@@ -285,15 +309,19 @@ class _TimerMetric extends StatelessWidget {
             value,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: GistagColors.primaryDark,
-              fontSize: 19,
+              fontSize: 17,
+              height: 1.05,
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
+              height: 1.05,
             ),
           ),
         ],
@@ -392,6 +420,181 @@ class _SessionRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PeersSection extends StatelessWidget {
+  const _PeersSection({required this.peersState});
+
+  final AsyncValue<WorkoutPeersSnapshot> peersState;
+
+  @override
+  Widget build(BuildContext context) {
+    return peersState.when(
+      loading: () => const _PeersCard(
+        title: '함께 운동 중',
+        message: '같은 장소의 운동 중인 사용자를 확인하고 있어요.',
+        items: [],
+      ),
+      error: (error, _) => const _PeersCard(
+        title: '함께 운동 중',
+        message: '함께 운동 중인 사용자를 불러오지 못했어요.',
+        items: [],
+      ),
+      data: (peers) {
+        if (peers.place == null) {
+          return const _PeersCard(
+            title: '함께 운동 중',
+            message: '현재 운동 중인 장소가 없어요.',
+            items: [],
+          );
+        }
+        if (peers.items.isEmpty) {
+          return _PeersCard(
+            title: '${peers.place!.name}에서 운동 중',
+            message: '지금은 혼자 운동 중이에요.',
+            items: const [],
+          );
+        }
+        return _PeersCard(
+          title: '${peers.place!.name}에서 운동 중',
+          message: '${peers.items.length}명이 함께 운동 중이에요.',
+          items: peers.items,
+        );
+      },
+    );
+  }
+}
+
+class _PeersCard extends StatelessWidget {
+  const _PeersCard({
+    required this.title,
+    required this.message,
+    required this.items,
+  });
+
+  final String title;
+  final String message;
+  final List<WorkoutPeer> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: GistagColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: GistagColors.primarySoft.withValues(alpha: 0.28),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(
+                  Icons.groups_rounded,
+                  color: GistagColors.primaryDark,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      message,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (items.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            for (final item in items) _PeerRow(peer: item),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PeerRow extends StatelessWidget {
+  const _PeerRow({required this.peer});
+
+  final WorkoutPeer peer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFFF4E4E2),
+            foregroundColor: GistagColors.text,
+            child: Text(
+              peer.name.characters.first,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  peer.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Lv.${peer.level} · ${peer.streakDays}일 연속 · ${_formatDuration(peer.duration)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${peer.xp} XP',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: GistagColors.primaryDark,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

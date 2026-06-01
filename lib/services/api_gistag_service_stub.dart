@@ -12,6 +12,9 @@ class ApiGistagService implements GistagService {
   Future<HomeSnapshot> loadHome() async => throw _unsupported;
 
   @override
+  Future<UserStats> loadUserStats() async => throw _unsupported;
+
+  @override
   Future<List<Place>> loadNearbyPlaces({
     required double latitude,
     required double longitude,
@@ -43,5 +46,10 @@ class ApiGistagService implements GistagService {
   Future<List<WorkoutRecord>> loadRecords() async => throw _unsupported;
 
   @override
-  Future<List<RankingUser>> loadRanking() async => throw _unsupported;
+  Future<RankingPage> loadRanking({int limit = 20, int offset = 0}) async =>
+      throw _unsupported;
+
+  @override
+  Future<WorkoutPeersSnapshot> loadActiveWorkoutPeers() async =>
+      throw _unsupported;
 }

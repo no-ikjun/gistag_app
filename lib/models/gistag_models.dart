@@ -21,6 +21,54 @@ class GistagUser {
   }
 }
 
+class UserStats {
+  const UserStats({
+    required this.userId,
+    required this.level,
+    required this.totalXp,
+    required this.xpInCurrentLevel,
+    required this.xpToNextLevel,
+    required this.xpPerLevel,
+    required this.currentStreak,
+    required this.totalWorkouts,
+    required this.totalDuration,
+    this.lastWorkoutDate,
+  });
+
+  final String userId;
+  final int level;
+  final int totalXp;
+  final int xpInCurrentLevel;
+  final int xpToNextLevel;
+  final int xpPerLevel;
+  final int currentStreak;
+  final String? lastWorkoutDate;
+  final int totalWorkouts;
+  final Duration totalDuration;
+
+  double get levelProgress {
+    if (xpPerLevel <= 0) {
+      return 0;
+    }
+    return (xpInCurrentLevel / xpPerLevel).clamp(0, 1);
+  }
+
+  bool get completedWorkoutToday {
+    final lastDate = lastWorkoutDate;
+    if (lastDate == null || lastDate.isEmpty) {
+      return false;
+    }
+    return lastDate == _kstDateString(DateTime.now().toUtc());
+  }
+
+  static String _kstDateString(DateTime utc) {
+    final kst = utc.add(const Duration(hours: 9));
+    return '${kst.year.toString().padLeft(4, '0')}-'
+        '${kst.month.toString().padLeft(2, '0')}-'
+        '${kst.day.toString().padLeft(2, '0')}';
+  }
+}
+
 class Place {
   const Place({
     required this.id,
@@ -146,6 +194,7 @@ class WorkoutRecord {
 class RankingUser {
   const RankingUser({
     required this.rank,
+    required this.userId,
     required this.name,
     required this.level,
     required this.xp,
@@ -154,9 +203,55 @@ class RankingUser {
   });
 
   final int rank;
+  final String userId;
   final String name;
   final int level;
   final int xp;
   final int streakDays;
   final bool isMe;
+}
+
+class RankingPage {
+  const RankingPage({
+    required this.items,
+    required this.total,
+    required this.limit,
+    required this.offset,
+    this.me,
+  });
+
+  final List<RankingUser> items;
+  final RankingUser? me;
+  final int total;
+  final int limit;
+  final int offset;
+
+  bool get hasMore => offset + items.length < total;
+}
+
+class WorkoutPeer {
+  const WorkoutPeer({
+    required this.userId,
+    required this.name,
+    required this.level,
+    required this.xp,
+    required this.streakDays,
+    required this.sessionStartedAt,
+    required this.duration,
+  });
+
+  final String userId;
+  final String name;
+  final int level;
+  final int xp;
+  final int streakDays;
+  final DateTime sessionStartedAt;
+  final Duration duration;
+}
+
+class WorkoutPeersSnapshot {
+  const WorkoutPeersSnapshot({required this.place, required this.items});
+
+  final Place? place;
+  final List<WorkoutPeer> items;
 }

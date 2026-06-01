@@ -275,15 +275,15 @@ class UserProfileController extends StateNotifier<AsyncValue<UserProfile?>> {
 class HomeData {
   const HomeData({
     required this.user,
+    required this.stats,
     required this.snapshot,
     required this.records,
-    required this.ranking,
   });
 
   final GistagUser user;
+  final UserStats stats;
   final HomeSnapshot snapshot;
   final List<WorkoutRecord> records;
-  final List<RankingUser> ranking;
 }
 
 final homeControllerProvider =
@@ -299,16 +299,97 @@ class HomeController extends StateNotifier<AsyncValue<HomeData>> {
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
+      final stats = await _service.loadUserStats();
       final snapshot = await _service.loadHome();
       final records = await _service.loadRecords();
-      final ranking = await _service.loadRanking();
       return HomeData(
-        user: snapshot.user,
+        user: snapshot.user.copyWith(
+          level: stats.level,
+          xp: stats.totalXp,
+          streakDays: stats.currentStreak,
+        ),
+        stats: stats,
         snapshot: snapshot,
         records: records,
-        ranking: ranking,
       );
     });
+  }
+}
+
+final rankingControllerProvider =
+    StateNotifierProvider<RankingController, AsyncValue<RankingPage>>((ref) {
+      return RankingController(ref.watch(gistagServiceProvider));
+    });
+
+class RankingController extends StateNotifier<AsyncValue<RankingPage>> {
+  RankingController(this._service) : super(const AsyncValue.loading());
+
+  static const int pageSize = 20;
+
+  final GistagService _service;
+  bool _loadingMore = false;
+
+  Future<void> load({bool force = false}) async {
+    if (!force && state.hasValue) {
+      return;
+    }
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() {
+      return _service.loadRanking(limit: pageSize, offset: 0);
+    });
+  }
+
+  Future<void> loadMore() async {
+    final current = state.maybeWhen(data: (value) => value, orElse: () => null);
+    if (current == null || !current.hasMore || _loadingMore) {
+      return;
+    }
+
+    _loadingMore = true;
+    final previous = current;
+    final next = await AsyncValue.guard(() {
+      return _service.loadRanking(
+        limit: previous.limit,
+        offset: previous.offset + previous.items.length,
+      );
+    });
+    state = next.when(
+      data: (page) => AsyncValue.data(
+        RankingPage(
+          items: [...previous.items, ...page.items],
+          me: page.me ?? previous.me,
+          total: page.total,
+          limit: page.limit,
+          offset: previous.offset,
+        ),
+      ),
+      error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
+      loading: () => AsyncValue.data(previous),
+    );
+    _loadingMore = false;
+  }
+}
+
+final workoutPeersControllerProvider =
+    StateNotifierProvider<
+      WorkoutPeersController,
+      AsyncValue<WorkoutPeersSnapshot>
+    >((ref) {
+      return WorkoutPeersController(ref.watch(gistagServiceProvider));
+    });
+
+class WorkoutPeersController
+    extends StateNotifier<AsyncValue<WorkoutPeersSnapshot>> {
+  WorkoutPeersController(this._service) : super(const AsyncValue.loading());
+
+  final GistagService _service;
+
+  Future<void> refresh() async {
+    state = await AsyncValue.guard(_service.loadActiveWorkoutPeers);
+  }
+
+  void clear() {
+    state = const AsyncValue.data(WorkoutPeersSnapshot(place: null, items: []));
   }
 }
 
@@ -444,19 +525,23 @@ class WorkoutFlowState {
     this.resolvedTag,
     this.activeSession,
     this.lastResult,
+    this.errorMessage,
   });
 
   final NfcTagResolution? resolvedTag;
   final WorkoutSession? activeSession;
   final WorkoutResult? lastResult;
+  final String? errorMessage;
 
   WorkoutFlowState copyWith({
     NfcTagResolution? resolvedTag,
     WorkoutSession? activeSession,
     WorkoutResult? lastResult,
+    String? errorMessage,
     bool clearResolvedTag = false,
     bool clearActiveSession = false,
     bool clearLastResult = false,
+    bool clearError = false,
   }) {
     return WorkoutFlowState(
       resolvedTag: clearResolvedTag ? null : resolvedTag ?? this.resolvedTag,
@@ -464,6 +549,7 @@ class WorkoutFlowState {
           ? null
           : activeSession ?? this.activeSession,
       lastResult: clearLastResult ? null : lastResult ?? this.lastResult,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
 }
@@ -497,6 +583,12 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
         hardwareUid: tag.hardwareUid,
       );
       return previous.copyWith(resolvedTag: resolution, clearLastResult: true);
+      final resolution = await _service.verifyNfcTag();
+      return previous.copyWith(
+        resolvedTag: resolution,
+        clearLastResult: true,
+        clearError: true,
+      );
     });
     state = result;
     return result.value?.resolvedTag;
@@ -509,6 +601,7 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
       return previous.copyWith(
         activeSession: session,
         clearActiveSession: session == null,
+        clearError: true,
       );
     });
     state = result;
@@ -523,6 +616,7 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
         activeSession: session,
         resolvedTag: resolution,
         clearLastResult: true,
+        clearError: true,
       );
     });
   }
@@ -537,15 +631,22 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
       return null;
     }
 
-    final result = await AsyncValue.guard(() async {
+    final previous = _value;
+    try {
       final workoutResult = await _service.endWorkout(session);
-      return _value.copyWith(
+      final next = previous.copyWith(
         lastResult: workoutResult,
         clearActiveSession: true,
+        clearError: true,
       );
-    });
-    state = result;
-    return result.value?.lastResult;
+      state = AsyncValue.data(next);
+      return workoutResult;
+    } catch (error) {
+      state = AsyncValue.data(
+        previous.copyWith(errorMessage: _workoutErrorMessage(error)),
+      );
+      return null;
+    }
   }
 
   Future<bool> cancelWorkout() async {
@@ -564,10 +665,19 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
       return previous.copyWith(
         clearActiveSession: true,
         clearResolvedTag: true,
+        clearError: true,
       );
     });
     state = result;
     return !result.hasError;
+  }
+
+  String _workoutErrorMessage(Object error) {
+    final message = error.toString();
+    if (message.trim().isEmpty) {
+      return '요청에 실패했어요. 최소 운동 시간은 60초입니다.';
+    }
+    return '요청에 실패했어요. 최소 운동 시간은 60초입니다.';
   }
 }
 

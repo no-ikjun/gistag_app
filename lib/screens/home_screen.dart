@@ -69,6 +69,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final homeState = ref.watch(homeControllerProvider);
     final nearbyState = ref.watch(nearbyPlacesControllerProvider);
+    final profile = ref.watch(userProfileControllerProvider).asData?.value;
+    final authUser = ref.watch(authControllerProvider).asData?.value.user;
     final nearbyPlaces = nearbyState.asData?.value;
     final mapConfig = ref.watch(mapConfigProvider);
 
@@ -91,6 +93,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final recentRecord = home.records.isNotEmpty
             ? home.records.first
             : null;
+        final userName = _displayName(
+          profile?.nickname,
+          authUser?.nickname,
+          home.user.name,
+        );
         const nfcDockHeight = 142.0;
 
         return SafeArea(
@@ -115,13 +122,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ).copyWith(bottom: 16 + nfcDockHeight),
                     children: [
                       _HomeHeader(
-                        userName: home.user.name,
+                        userName: userName,
                         onSettingsTap: () => context.push('/settings'),
                         onLogoLongPress: () => context.push('/admin/nfc-tags'),
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        '오늘은 GIST 주변 루틴을 가볍게 추천해드릴게요',
+                        home.stats.completedWorkoutToday
+                            ? '오늘 운동을 완료했어요. 가볍게 루틴을 이어가볼까요?'
+                            : '오늘은 GIST 주변 루틴을 가볍게 추천해드릴게요',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: const Color(0xFF5B5F66),
                           fontSize: 15,
@@ -130,7 +139,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _InfoPillsRow(user: home.user),
+                      _InfoPillsRow(stats: home.stats),
                       const SizedBox(height: 26),
                       _SectionHeaderRow(
                         title: '최근 나의 기록',
@@ -193,6 +202,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _openNfcScan(BuildContext context) {
     context.go('/scan');
+  }
+
+  String _displayName(
+    String? profileNickname,
+    String? authNickname,
+    String fallback,
+  ) {
+    for (final value in [profileNickname, authNickname, fallback]) {
+      final trimmed = value?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        return trimmed;
+      }
+    }
+    return 'Gistag';
   }
 
   String _mapStatusMessage({
@@ -344,16 +367,12 @@ class _HomeBottomDock extends StatelessWidget {
 }
 
 class _InfoPillsRow extends StatelessWidget {
-  const _InfoPillsRow({required this.user});
+  const _InfoPillsRow({required this.stats});
 
-  final GistagUser? user;
+  final UserStats stats;
 
   @override
   Widget build(BuildContext context) {
-    final level = user?.level ?? 2;
-    final streak = user?.streakDays ?? 8;
-    final xp = user?.xp ?? 820;
-
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -368,7 +387,7 @@ class _InfoPillsRow extends StatelessWidget {
               icon: Icons.trending_up_rounded,
               iconColor: GistagColors.primary,
               label: '레벨',
-              value: 'Lv. $level',
+              value: 'Lv. ${stats.level}',
             ),
           ),
           const SizedBox(width: 10),
@@ -377,16 +396,80 @@ class _InfoPillsRow extends StatelessWidget {
               icon: Icons.local_fire_department_rounded,
               iconColor: const Color(0xFFF59E0B),
               label: '연속',
-              value: '$streak일',
+              value: '${stats.currentStreak}일',
             ),
           ),
           const SizedBox(width: 10),
+          Expanded(child: _XpProgressPill(stats: stats)),
+        ],
+      ),
+    );
+  }
+}
+
+class _XpProgressPill extends StatelessWidget {
+  const _XpProgressPill({required this.stats});
+
+  final UserStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 52,
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.bolt_rounded,
+              color: Color(0xFF7C3AED),
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 9),
           Expanded(
-            child: _InfoPill(
-              icon: Icons.bolt_rounded,
-              iconColor: const Color(0xFF7C3AED),
-              label: 'XP',
-              value: '$xp',
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'XP',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF8B9098),
+                    fontSize: 11,
+                    height: 1.0,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: stats.levelProgress,
+                    minHeight: 5,
+                    backgroundColor: const Color(0xFFECE6F7),
+                    color: const Color(0xFF7C3AED),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${stats.xpInCurrentLevel}/${stats.xpPerLevel}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: GistagColors.text,
+                    fontSize: 11,
+                    height: 1,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

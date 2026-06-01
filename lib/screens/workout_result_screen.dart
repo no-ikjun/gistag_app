@@ -63,6 +63,7 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
           children: [
             _ResultHero(result: result),

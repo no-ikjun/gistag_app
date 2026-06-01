@@ -139,6 +139,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: Scaffold(
         body: SafeArea(
           child: ListView(
+            physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
             children: [
               GistagHeader(
