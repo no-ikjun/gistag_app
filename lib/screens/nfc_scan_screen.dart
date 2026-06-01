@@ -77,7 +77,7 @@ class _NfcScanScreenState extends ConsumerState<NfcScanScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'MVP에서는 데모 태그로 장소 검증 API를 호출합니다.',
+                      '휴대폰 뒷면을 Gistag NFC 태그에 가까이 대주세요.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: GistagColors.mutedText,
                         fontWeight: FontWeight.w500,
@@ -115,50 +115,91 @@ class _NfcScanScreenState extends ConsumerState<NfcScanScreen> {
   }
 }
 
-class _NfcScanVisual extends StatelessWidget {
+class _NfcScanVisual extends StatefulWidget {
   const _NfcScanVisual({required this.isError});
 
   final bool isError;
 
   @override
+  State<_NfcScanVisual> createState() => _NfcScanVisualState();
+}
+
+class _NfcScanVisualState extends State<_NfcScanVisual>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final accent = isError ? GistagColors.primaryDark : GistagColors.primary;
+    final accent = widget.isError
+        ? GistagColors.primaryDark
+        : GistagColors.primary;
 
     return SizedBox(
-      width: 196,
-      height: 196,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 196,
-            height: 196,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: accent.withValues(alpha: 0.10),
-                width: 18,
-              ),
-            ),
-          ),
-          Container(
-            width: 150,
-            height: 150,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: GistagColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.10),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
+      width: 236,
+      height: 236,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final pulse = Curves.easeInOut.transform(_controller.value);
+          final outerSize = 196 + (10 * pulse);
+          final borderWidth = 18 + (2 * pulse);
+
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: outerSize,
+                height: outerSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: accent.withValues(alpha: 0.09 + (0.04 * pulse)),
+                    width: borderWidth,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.04 + (0.04 * pulse)),
+                      blurRadius: 18 + (14 * pulse),
+                      spreadRadius: 1 + (3 * pulse),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Icon(Icons.nfc_rounded, color: accent, size: 72),
-          ),
-        ],
+              ),
+              Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: GistagColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.10),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.nfc_rounded, color: accent, size: 72),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -200,7 +241,7 @@ class _DemoTagCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'GISTAG_TAG_DEMO_001',
+                  '실제 NFC 태그 대기 중',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -210,7 +251,7 @@ class _DemoTagCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  loading ? 'POST /tags/resolve' : '데모 태그 코드',
+                  loading ? 'POST /tags/resolve' : 'NDEF payload 읽기',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
