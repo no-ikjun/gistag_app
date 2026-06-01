@@ -582,8 +582,6 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
         ndefPayload: tag.ndefPayload,
         hardwareUid: tag.hardwareUid,
       );
-      return previous.copyWith(resolvedTag: resolution, clearLastResult: true);
-      final resolution = await _service.verifyNfcTag();
       return previous.copyWith(
         resolvedTag: resolution,
         clearLastResult: true,
