@@ -20,5 +20,21 @@ void main() {
         throwsA(isA<NfcPayloadFormatException>()),
       );
     });
+
+    test('builds canonical Gistag URI payload', () {
+      expect(
+        buildGistagTagPayload('GISTAG_TAG_DEMO_001'),
+        'gistag://tag/GISTAG_TAG_DEMO_001',
+      );
+    });
+
+    test('reads Gistag URI from generated NDEF message', () {
+      final message = buildGistagNdefMessage('GISTAG_TAG_DEMO_001');
+
+      expect(
+        readGistagPayloadFromNdefMessage(message),
+        'gistag://tag/GISTAG_TAG_DEMO_001',
+      );
+    });
   });
 }
