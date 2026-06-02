@@ -15,6 +15,37 @@ import '../screens/settings_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/tag_success_screen.dart';
 import '../screens/workout_result_screen.dart';
+import '../services/analytics_route_observer.dart';
+
+abstract final class AppRouteNames {
+  static const splash = 'splash';
+  static const login = 'login';
+  static const register = 'register';
+  static const home = 'home';
+  static const onboarding = 'onboarding';
+  static const settings = 'settings';
+  static const placesMap = 'places_map';
+  static const scan = 'scan';
+  static const adminNfcTags = 'admin_nfc_tags';
+  static const tagSuccess = 'tag_success';
+  static const workout = 'workout';
+  static const workoutResult = 'workout_result';
+
+  static const paths = {
+    splash: '/splash',
+    login: '/login',
+    register: '/register',
+    home: '/home',
+    onboarding: '/onboarding',
+    settings: '/settings',
+    placesMap: '/places-map',
+    scan: '/scan',
+    adminNfcTags: '/admin/nfc-tags',
+    tagSuccess: '/tag-success',
+    workout: '/workout',
+    workoutResult: '/workout-result',
+  };
+}
 
 final routerNotifierProvider = Provider<RouterNotifier>((ref) {
   return RouterNotifier(ref);
@@ -22,54 +53,76 @@ final routerNotifierProvider = Provider<RouterNotifier>((ref) {
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = ref.watch(routerNotifierProvider);
+  final analytics = ref.watch(analyticsServiceProvider);
 
   return GoRouter(
     initialLocation: '/splash',
     refreshListenable: notifier,
     redirect: notifier.redirect,
+    observers: [
+      AnalyticsRouteObserver(
+        analytics: analytics,
+        routePaths: AppRouteNames.paths,
+      ),
+    ],
     routes: [
       GoRoute(
+        name: AppRouteNames.splash,
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
+        name: AppRouteNames.login,
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        name: AppRouteNames.register,
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
+        name: AppRouteNames.home,
         path: '/home',
         builder: (context, state) => const HomeShellScreen(),
       ),
       GoRoute(
+        name: AppRouteNames.onboarding,
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
+        name: AppRouteNames.settings,
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
+        name: AppRouteNames.placesMap,
         path: '/places-map',
         builder: (context, state) => const PlaceMapScreen(),
       ),
       GoRoute(
+        name: AppRouteNames.scan,
         path: '/scan',
         builder: (context, state) => const NfcScanScreen(),
       ),
       GoRoute(
+        name: AppRouteNames.adminNfcTags,
         path: '/admin/nfc-tags',
         builder: (context, state) => const NfcAdminScreen(),
       ),
       GoRoute(
+        name: AppRouteNames.tagSuccess,
         path: '/tag-success',
         builder: (context, state) => const TagSuccessScreen(),
       ),
       GoRoute(
+        name: AppRouteNames.workout,
         path: '/workout',
         builder: (context, state) => const ActiveWorkoutScreen(),
       ),
       GoRoute(
+        name: AppRouteNames.workoutResult,
         path: '/workout-result',
         builder: (context, state) => const WorkoutResultScreen(),
       ),

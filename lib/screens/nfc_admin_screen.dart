@@ -294,7 +294,12 @@ class _PasswordPanel extends StatelessWidget {
           _InlineMessage(message: errorMessage!, isError: true),
         ],
         const SizedBox(height: 16),
-        GistagButton(label: '열기', onPressed: onSubmit),
+        GistagButton(
+          label: '열기',
+          onPressed: onSubmit,
+          analyticsId: 'admin_unlock_submit',
+          analyticsActionType: 'submit',
+        ),
       ],
     );
   }
@@ -411,6 +416,8 @@ class _TagRegisterPanel extends StatelessWidget {
         GistagButton(
           label: isRegistering ? '태그를 기다리는 중' : 'NFC 태그 읽어서 등록',
           onPressed: isRegistering || isInspecting ? null : onRegister,
+          analyticsId: 'admin_nfc_tag_register',
+          analyticsActionType: 'submit',
         ),
         const SizedBox(height: 10),
         GistagButton(
@@ -418,6 +425,8 @@ class _TagRegisterPanel extends StatelessWidget {
           onPressed: isRegistering || isInspecting ? null : onInspect,
           backgroundColor: Colors.white,
           foregroundColor: GistagColors.text,
+          analyticsId: 'admin_nfc_tag_inspect',
+          analyticsActionType: 'submit',
         ),
       ],
     );

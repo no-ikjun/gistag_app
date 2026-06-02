@@ -11,6 +11,8 @@ class SelectableOptionCard extends StatelessWidget {
     super.key,
     this.subtitle,
     this.hapticsEnabled = false,
+    this.analyticsId,
+    this.analyticsProperties = const {},
   });
 
   final String label;
@@ -18,6 +20,8 @@ class SelectableOptionCard extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final bool hapticsEnabled;
+  final String? analyticsId;
+  final Map<String, Object?> analyticsProperties;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +29,10 @@ class SelectableOptionCard extends StatelessWidget {
       onTap: onTap,
       hapticsEnabled: hapticsEnabled,
       borderRadius: BorderRadius.circular(14),
+      analyticsId: analyticsId,
+      analyticsComponent: 'option_card',
+      analyticsActionType: 'select',
+      analyticsProperties: analyticsProperties,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),

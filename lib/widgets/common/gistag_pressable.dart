@@ -1,5 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../providers/app_providers.dart';
 
 class GistagPressable extends StatefulWidget {
   const GistagPressable({
@@ -13,6 +19,11 @@ class GistagPressable extends StatefulWidget {
     this.curve = Curves.easeOut,
     this.borderRadius,
     this.customBorder,
+    this.analyticsId,
+    this.analyticsComponent = 'pressable',
+    this.analyticsActionType,
+    this.analyticsDestination,
+    this.analyticsProperties = const {},
   }) : assert(
          borderRadius == null || customBorder == null,
          'borderRadius and customBorder cannot be used together.',
@@ -31,6 +42,12 @@ class GistagPressable extends StatefulWidget {
 
   final BorderRadius? borderRadius;
   final ShapeBorder? customBorder;
+
+  final String? analyticsId;
+  final String analyticsComponent;
+  final String? analyticsActionType;
+  final String? analyticsDestination;
+  final Map<String, Object?> analyticsProperties;
 
   @override
   State<GistagPressable> createState() => _GistagPressableState();
@@ -56,6 +73,54 @@ class _GistagPressableState extends State<GistagPressable> {
     if (_didHapticInThisPress) return;
     _didHapticInThisPress = true;
     widget.hapticFeedback();
+  }
+
+  void _handleTap() {
+    final onTap = widget.onTap;
+    if (onTap == null) {
+      return;
+    }
+    _trackButtonTap();
+    onTap();
+  }
+
+  void _trackButtonTap() {
+    final analyticsId = widget.analyticsId;
+    if (analyticsId == null || analyticsId.trim().isEmpty) {
+      return;
+    }
+
+    String? screen;
+    String? path;
+    try {
+      final state = GoRouterState.of(context);
+      screen = state.name;
+      path = state.matchedLocation;
+    } catch (_) {
+      screen = null;
+      path = null;
+    }
+
+    final analytics = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(analyticsServiceProvider);
+
+    unawaited(
+      analytics.trackButton(
+        analyticsId,
+        properties: {
+          'screen': screen ?? 'unknown',
+          if (path != null) 'path': path,
+          'component': widget.analyticsComponent,
+          if (widget.analyticsActionType != null)
+            'action_type': widget.analyticsActionType,
+          if (widget.analyticsDestination != null)
+            'destination': widget.analyticsDestination,
+          ...widget.analyticsProperties,
+        },
+      ),
+    );
   }
 
   @override
@@ -85,7 +150,7 @@ class _GistagPressableState extends State<GistagPressable> {
         _pressToken++;
         _setPressed(false);
       },
-      onTap: widget.onTap,
+      onTap: _handleTap,
       child: AnimatedScale(
         scale: targetScale,
         duration: widget.duration,

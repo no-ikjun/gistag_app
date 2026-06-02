@@ -191,6 +191,9 @@ class _DialogCloseButton<T> extends StatelessWidget {
     return GistagPressable(
       onTap: () => Navigator.of(context).pop<T>(),
       borderRadius: BorderRadius.circular(10),
+      analyticsId: 'dialog_close',
+      analyticsComponent: 'dialog_icon_button',
+      analyticsActionType: 'close',
       child: const SizedBox(
         width: 34,
         height: 34,
@@ -248,6 +251,9 @@ class _DialogActionButton<T> extends StatelessWidget {
         Navigator.of(context).pop<T>(action.result);
       },
       borderRadius: BorderRadius.circular(14),
+      analyticsId: _analyticsId,
+      analyticsComponent: 'dialog_action_button',
+      analyticsActionType: _analyticsActionType,
       child: Container(
         height: 50,
         alignment: Alignment.center,
@@ -268,6 +274,22 @@ class _DialogActionButton<T> extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String get _analyticsId {
+    return switch (action.style) {
+      GistagDialogActionStyle.primary => 'dialog_primary_action',
+      GistagDialogActionStyle.secondary => 'dialog_secondary_action',
+      GistagDialogActionStyle.destructive => 'dialog_destructive_action',
+    };
+  }
+
+  String get _analyticsActionType {
+    return switch (action.style) {
+      GistagDialogActionStyle.primary => 'confirm',
+      GistagDialogActionStyle.secondary => 'cancel',
+      GistagDialogActionStyle.destructive => 'confirm',
+    };
   }
 }
 

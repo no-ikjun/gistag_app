@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../config/admin_config.dart';
+import '../config/analytics_config.dart';
 import '../config/auth_config.dart';
 import '../config/map_config.dart';
 import '../models/auth_models.dart';
@@ -13,6 +16,7 @@ import '../models/user_profile_models.dart';
 import '../services/api_client.dart';
 import '../services/api_gistag_service_stub.dart'
     if (dart.library.io) '../services/api_gistag_service.dart';
+import '../services/analytics_service.dart';
 import '../services/auth_api.dart';
 import '../services/auth_repository.dart';
 import '../services/auth_token_manager.dart';
@@ -32,6 +36,18 @@ final mapConfigProvider = Provider<MapConfig>((ref) {
 
 final adminConfigProvider = Provider<AdminConfig>((ref) {
   return AdminConfig.fromEnvironment();
+});
+
+final analyticsConfigProvider = Provider<AnalyticsConfig>((ref) {
+  return AnalyticsConfig.fromEnvironment();
+});
+
+final analyticsServiceProvider = Provider<AnalyticsService>((ref) {
+  final config = ref.watch(analyticsConfigProvider);
+  if (!config.enabled) {
+    return const NoopAnalyticsService();
+  }
+  return AmplitudeAnalyticsService(config);
 });
 
 final authDioProvider = Provider<Dio>((ref) {
@@ -109,11 +125,37 @@ final authControllerProvider =
       return AuthController(
         ref.watch(authRepositoryProvider),
         ref.watch(authTokenManagerProvider),
+        ref.watch(analyticsServiceProvider),
       );
     });
 
+final analyticsBindingProvider = Provider<void>((ref) {
+  final analytics = ref.watch(analyticsServiceProvider);
+  String? identifiedUserId;
+
+  ref.listen(authControllerProvider, (_, next) {
+    final session = next.maybeWhen(data: (value) => value, orElse: () => null);
+
+    if (session?.status == AuthStatus.authenticated && session?.user != null) {
+      final user = session!.user!;
+      if (identifiedUserId == user.userId) {
+        return;
+      }
+      identifiedUserId = user.userId;
+      unawaited(analytics.identify(user));
+      return;
+    }
+
+    if (session?.status == AuthStatus.unauthenticated &&
+        identifiedUserId != null) {
+      identifiedUserId = null;
+      unawaited(analytics.reset());
+    }
+  });
+});
+
 class AuthController extends StateNotifier<AsyncValue<AuthSession>> {
-  AuthController(this._repository, this._tokenManager)
+  AuthController(this._repository, this._tokenManager, this._analytics)
     : super(const AsyncValue.loading()) {
     _tokenManager.onSessionExpired = _handleSessionExpired;
     initialize();
@@ -121,6 +163,7 @@ class AuthController extends StateNotifier<AsyncValue<AuthSession>> {
 
   final AuthRepository _repository;
   final AuthTokenManager _tokenManager;
+  final AnalyticsService _analytics;
 
   Future<void> initialize() async {
     state = const AsyncValue.loading();
@@ -129,6 +172,7 @@ class AuthController extends StateNotifier<AsyncValue<AuthSession>> {
       if (user == null) {
         return const AuthSession.unauthenticated();
       }
+      await _analytics.track('auth_session_restored');
       return AuthSession.authenticated(user);
     });
   }
@@ -139,8 +183,23 @@ class AuthController extends StateNotifier<AsyncValue<AuthSession>> {
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final user = await _repository.login(email: email, password: password);
-      return AuthSession.authenticated(user);
+      try {
+        final user = await _repository.login(email: email, password: password);
+        await _analytics.track(
+          'auth_login_succeeded',
+          properties: {'method': 'email'},
+        );
+        return AuthSession.authenticated(user);
+      } catch (error) {
+        await _analytics.track(
+          'auth_login_failed',
+          properties: {
+            'method': 'email',
+            'error_type': analyticsErrorType(error),
+          },
+        );
+        rethrow;
+      }
     });
   }
 
@@ -151,30 +210,62 @@ class AuthController extends StateNotifier<AsyncValue<AuthSession>> {
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final user = await _repository.register(
-        email: email,
-        password: password,
-        nickname: nickname,
-      );
-      return AuthSession.authenticated(user);
+      try {
+        final user = await _repository.register(
+          email: email,
+          password: password,
+          nickname: nickname,
+        );
+        await _analytics.track(
+          'auth_register_succeeded',
+          properties: {'method': 'email'},
+        );
+        return AuthSession.authenticated(user);
+      } catch (error) {
+        await _analytics.track(
+          'auth_register_failed',
+          properties: {
+            'method': 'email',
+            'error_type': analyticsErrorType(error),
+          },
+        );
+        rethrow;
+      }
     });
   }
 
   Future<void> loginWithInfoteam() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final user = await _repository.loginWithInfoteam();
-      return AuthSession.authenticated(user);
+      try {
+        final user = await _repository.loginWithInfoteam();
+        await _analytics.track(
+          'auth_login_succeeded',
+          properties: {'method': 'infoteam'},
+        );
+        return AuthSession.authenticated(user);
+      } catch (error) {
+        await _analytics.track(
+          'auth_login_failed',
+          properties: {
+            'method': 'infoteam',
+            'error_type': analyticsErrorType(error),
+          },
+        );
+        rethrow;
+      }
     });
   }
 
   Future<void> logout() async {
     state = const AsyncValue.loading();
+    await _analytics.track('auth_logout');
     await _repository.logout();
     state = const AsyncValue.data(AuthSession.unauthenticated());
   }
 
   void _handleSessionExpired() {
+    unawaited(_analytics.reset());
     state = const AsyncValue.data(AuthSession.unauthenticated());
   }
 
@@ -566,12 +657,17 @@ final workoutControllerProvider =
         ref.watch(gistagServiceProvider),
         ref.watch(gistagNfcServiceProvider),
         ref.watch(demoNfcTagResolutionProvider),
+        ref.watch(analyticsServiceProvider),
       );
     });
 
 class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
-  WorkoutController(this._service, this._nfcService, this._demoResolution)
-    : super(const AsyncValue.data(WorkoutFlowState()));
+  WorkoutController(
+    this._service,
+    this._nfcService,
+    this._demoResolution,
+    this._analytics,
+  ) : super(const AsyncValue.data(WorkoutFlowState()));
 
   static const _demoHardwareUid = 'DEMO-NFC-TAG';
   static const _demoTagCode = 'GISTAG_TAG_DEMO_001';
@@ -592,15 +688,21 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
   final GistagService _service;
   final GistagNfcService _nfcService;
   final NfcTagResolution? _demoResolution;
+  final AnalyticsService _analytics;
 
   WorkoutFlowState get _value => state.value ?? const WorkoutFlowState();
 
   Future<NfcTagResolution?> scanNfcTag() async {
     final previous = _value;
+    await _analytics.track('nfc_scan_started');
     state = const AsyncValue.loading();
     final result = await AsyncValue.guard(() async {
       final tag = await _nfcService.readTag();
       if (_isDemoTag(tag.hardwareUid)) {
+        await _analytics.track(
+          'nfc_scan_succeeded',
+          properties: _nfcResolutionProperties(_activeDemoResolution),
+        );
         return previous.copyWith(
           resolvedTag: _activeDemoResolution,
           clearLastResult: true,
@@ -611,12 +713,22 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
         ndefPayload: tag.ndefPayload,
         hardwareUid: tag.hardwareUid,
       );
+      await _analytics.track(
+        'nfc_scan_succeeded',
+        properties: _nfcResolutionProperties(resolution),
+      );
       return previous.copyWith(
         resolvedTag: resolution,
         clearLastResult: true,
         clearError: true,
       );
     });
+    if (result.hasError) {
+      await _analytics.track(
+        'nfc_scan_failed',
+        properties: {'error_type': analyticsErrorType(result.error!)},
+      );
+    }
     state = result;
     return result.value?.resolvedTag;
   }
@@ -639,6 +751,10 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       if (_isDemoResolution(resolution)) {
+        await _analytics.track(
+          'workout_started',
+          properties: _workoutPlaceProperties(resolution.place),
+        );
         return previous.copyWith(
           activeSession: _demoSession(resolution),
           resolvedTag: resolution,
@@ -647,6 +763,10 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
         );
       }
       final session = await _service.startWorkout(resolution);
+      await _analytics.track(
+        'workout_started',
+        properties: _workoutPlaceProperties(session.place),
+      );
       return previous.copyWith(
         activeSession: session,
         resolvedTag: resolution,
@@ -670,6 +790,10 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
     try {
       if (_isDemoSession(session)) {
         final workoutResult = _demoWorkoutResult(session);
+        await _analytics.track(
+          'workout_completed',
+          properties: _workoutResultProperties(workoutResult),
+        );
         final next = previous.copyWith(
           lastResult: workoutResult,
           clearActiveSession: true,
@@ -679,6 +803,10 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
         return workoutResult;
       }
       final workoutResult = await _service.endWorkout(session);
+      await _analytics.track(
+        'workout_completed',
+        properties: _workoutResultProperties(workoutResult),
+      );
       final next = previous.copyWith(
         lastResult: workoutResult,
         clearActiveSession: true,
@@ -709,6 +837,10 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
       if (!_isDemoSession(session)) {
         await _service.cancelWorkout(session);
       }
+      await _analytics.track(
+        'workout_cancelled',
+        properties: _workoutPlaceProperties(session.place),
+      );
       return previous.copyWith(
         clearActiveSession: true,
         clearResolvedTag: true,
@@ -765,6 +897,30 @@ class WorkoutController extends StateNotifier<AsyncValue<WorkoutFlowState>> {
       totalXp: 1360,
       streakUpdated: true,
     );
+  }
+
+  Map<String, Object?> _nfcResolutionProperties(NfcTagResolution resolution) {
+    return {
+      'tag_status': resolution.tag.status,
+      'can_start_workout': resolution.canStartWorkout,
+      'workout_type': resolution.place.workoutType,
+    };
+  }
+
+  Map<String, Object?> _workoutPlaceProperties(Place place) {
+    return {'place_id': place.id, 'workout_type': place.workoutType};
+  }
+
+  Map<String, Object?> _workoutResultProperties(WorkoutResult result) {
+    return {
+      'place_id': result.place.id,
+      'workout_type': result.place.workoutType,
+      'duration_seconds': result.duration.inSeconds,
+      'earned_xp': result.earnedXp,
+      'level': result.level,
+      'leveled_up': result.leveledUp,
+      'streak_updated': result.streakUpdated,
+    };
   }
 
   String _workoutErrorMessage(Object error) {

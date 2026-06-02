@@ -12,6 +12,8 @@ class PlaceCard extends StatelessWidget {
     this.onTap,
     this.width,
     this.showNfcChip = true,
+    this.analyticsId,
+    this.analyticsProperties = const {},
   });
 
   final Place place;
@@ -21,6 +23,8 @@ class PlaceCard extends StatelessWidget {
   final double? width;
 
   final bool showNfcChip;
+  final String? analyticsId;
+  final Map<String, Object?> analyticsProperties;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +34,14 @@ class PlaceCard extends StatelessWidget {
     return GistagPressable(
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
+      analyticsId: analyticsId,
+      analyticsComponent: 'place_card',
+      analyticsActionType: 'open',
+      analyticsProperties: {
+        'place_id': place.id,
+        'workout_type': place.workoutType,
+        ...analyticsProperties,
+      },
       child: Container(
         width: cardW,
         padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),

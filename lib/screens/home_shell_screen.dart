@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -112,7 +114,21 @@ class _HomeShellScreenState extends ConsumerState<HomeShellScreen>
                   ),
                   const SizedBox(height: 12),
                   FilledButton(
-                    onPressed: _refreshAndRestore,
+                    onPressed: () {
+                      unawaited(
+                        ref
+                            .read(analyticsServiceProvider)
+                            .trackButton(
+                              'home_shell_profile_retry',
+                              properties: {
+                                'screen': 'home',
+                                'component': 'filled_button',
+                                'action_type': 'retry',
+                              },
+                            ),
+                      );
+                      _refreshAndRestore();
+                    },
                     child: const Text('다시 시도'),
                   ),
                 ],
@@ -128,9 +144,31 @@ class _HomeShellScreenState extends ConsumerState<HomeShellScreen>
       bottomNavigationBar: GistagFooter(
         selectedIndex: selectedHomeTab,
         onSelected: (index) {
+          if (index != selectedHomeTab) {
+            unawaited(
+              ref
+                  .read(analyticsServiceProvider)
+                  .track(
+                    'tab_viewed',
+                    properties: {
+                      'tab': _tabName(index),
+                      'previous_tab': _tabName(selectedHomeTab),
+                    },
+                  ),
+            );
+          }
           ref.read(selectedHomeTabProvider.notifier).state = index;
         },
       ),
     );
+  }
+
+  String _tabName(int index) {
+    return switch (index) {
+      0 => 'home',
+      1 => 'ranking',
+      2 => 'history',
+      _ => 'unknown',
+    };
   }
 }

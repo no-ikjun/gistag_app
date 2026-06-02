@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -42,6 +44,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _trackStepViewed();
       _redirectIfCompleted();
     });
   }
@@ -70,6 +73,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _step += 1;
         _errorMessage = null;
       });
+      _trackStepViewed();
       return;
     }
 
@@ -96,6 +100,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           );
       if (!mounted) return;
       if (profile.onboardingCompleted) {
+        unawaited(
+          ref.read(analyticsServiceProvider).track('onboarding_completed'),
+        );
         context.go('/home');
       }
     } on UserProfileApiException catch (error) {
@@ -115,6 +122,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _step -= 1;
       _errorMessage = null;
     });
+    _trackStepViewed();
+  }
+
+  void _trackStepViewed() {
+    unawaited(
+      ref
+          .read(analyticsServiceProvider)
+          .track('onboarding_step_viewed', properties: {'step': _step}),
+    );
   }
 
   @override
@@ -179,6 +195,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ? '저장하고 시작하기'
                   : '다음',
               onPressed: !isSubmitting && _canContinue ? _continue : null,
+              analyticsId: _step == _lastStep
+                  ? 'onboarding_submit'
+                  : 'onboarding_next',
+              analyticsActionType: _step == _lastStep ? 'submit' : 'navigate',
+              analyticsProperties: {'step': _step},
             ),
           ],
         ),
@@ -195,6 +216,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               label: gender.label,
               selected: _gender == gender,
               onTap: () => setState(() => _gender = gender),
+              analyticsId: 'onboarding_gender_option',
+              analyticsProperties: {'step': _step, 'option_group': 'gender'},
             ),
         ],
       ),
@@ -204,6 +227,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             SelectableOptionCard(
               label: exerciseType.label,
               selected: _exerciseTypes.contains(exerciseType),
+              analyticsId: 'onboarding_exercise_type_option',
+              analyticsProperties: {
+                'step': _step,
+                'option_group': 'exercise_type',
+              },
               onTap: () {
                 setState(() {
                   if (!_exerciseTypes.add(exerciseType)) {
@@ -221,6 +249,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               label: frequency.label,
               selected: _exerciseFrequency == frequency,
               onTap: () => setState(() => _exerciseFrequency = frequency),
+              analyticsId: 'onboarding_frequency_option',
+              analyticsProperties: {
+                'step': _step,
+                'option_group': 'exercise_frequency',
+              },
             ),
         ],
       ),

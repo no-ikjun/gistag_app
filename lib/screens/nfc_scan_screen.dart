@@ -48,6 +48,10 @@ class _NfcScanScreenState extends ConsumerState<NfcScanScreen> {
                   GistagPressable(
                     onTap: () => context.go('/home'),
                     borderRadius: BorderRadius.circular(12),
+                    analyticsId: 'nfc_scan_close',
+                    analyticsComponent: 'icon_button',
+                    analyticsActionType: 'cancel',
+                    analyticsDestination: '/home',
                     child: Container(
                       width: 40,
                       height: 40,
@@ -103,6 +107,9 @@ class _NfcScanScreenState extends ConsumerState<NfcScanScreen> {
                       onPressed: () => context.go('/home'),
                       backgroundColor: Colors.white,
                       foregroundColor: GistagColors.text,
+                      analyticsId: 'nfc_scan_cancel',
+                      analyticsActionType: 'cancel',
+                      analyticsDestination: '/home',
                     ),
                   ],
                 ),
@@ -334,7 +341,17 @@ class _ScanError extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
-          TextButton(onPressed: onRetry, child: const Text('다시 태그하기')),
+          GistagPressable(
+            onTap: onRetry,
+            borderRadius: BorderRadius.circular(8),
+            analyticsId: 'nfc_scan_retry',
+            analyticsComponent: 'text_button',
+            analyticsActionType: 'retry',
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Text('다시 태그하기'),
+            ),
+          ),
         ],
       ),
     );

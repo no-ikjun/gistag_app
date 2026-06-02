@@ -12,6 +12,10 @@ class GistagButton extends StatelessWidget {
     this.backgroundColor,
     this.foregroundColor = Colors.white,
     this.hapticsEnabled = false,
+    this.analyticsId,
+    this.analyticsActionType,
+    this.analyticsDestination,
+    this.analyticsProperties = const {},
   });
 
   final String label;
@@ -20,6 +24,10 @@ class GistagButton extends StatelessWidget {
   final Color? backgroundColor;
   final Color foregroundColor;
   final bool hapticsEnabled;
+  final String? analyticsId;
+  final String? analyticsActionType;
+  final String? analyticsDestination;
+  final Map<String, Object?> analyticsProperties;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +72,11 @@ class GistagButton extends StatelessWidget {
         onTap: onPressed,
         hapticsEnabled: hapticsEnabled,
         borderRadius: BorderRadius.circular(14),
+        analyticsId: analyticsId,
+        analyticsComponent: 'gistag_button',
+        analyticsActionType: analyticsActionType,
+        analyticsDestination: analyticsDestination,
+        analyticsProperties: analyticsProperties,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           height: 56,

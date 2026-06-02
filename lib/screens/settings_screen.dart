@@ -89,6 +89,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   destructive: true,
                   enabled: canLogout,
                   onTap: _confirmLogout,
+                  analyticsId: 'settings_logout_open_confirm',
+                  analyticsActionType: 'open',
                 ),
               ],
             ),
@@ -258,6 +260,8 @@ class _SettingsRow extends StatelessWidget {
     this.destructive = false,
     this.enabled = true,
     this.onTap,
+    this.analyticsId,
+    this.analyticsActionType,
   });
 
   final IconData icon;
@@ -266,6 +270,8 @@ class _SettingsRow extends StatelessWidget {
   final bool destructive;
   final bool enabled;
   final VoidCallback? onTap;
+  final String? analyticsId;
+  final String? analyticsActionType;
 
   @override
   Widget build(BuildContext context) {
@@ -278,6 +284,9 @@ class _SettingsRow extends StatelessWidget {
     return GistagPressable(
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(18),
+      analyticsId: analyticsId,
+      analyticsComponent: 'settings_row',
+      analyticsActionType: analyticsActionType,
       child: Opacity(
         opacity: opacity,
         child: Padding(

@@ -5,6 +5,7 @@ import '../app/app_theme.dart';
 import '../models/gistag_models.dart';
 import '../providers/app_providers.dart';
 import '../widgets/common/app_logo.dart';
+import '../widgets/common/gistag_pressable.dart';
 import '../widgets/gistag/ranking_row.dart';
 
 class RankingScreen extends ConsumerStatefulWidget {
@@ -221,7 +222,17 @@ class _ListError extends StatelessWidget {
     return Column(
       children: [
         Text(message),
-        TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+        GistagPressable(
+          onTap: onRetry,
+          borderRadius: BorderRadius.circular(8),
+          analyticsId: 'ranking_retry',
+          analyticsComponent: 'text_button',
+          analyticsActionType: 'retry',
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Text('다시 시도'),
+          ),
+        ),
       ],
     );
   }

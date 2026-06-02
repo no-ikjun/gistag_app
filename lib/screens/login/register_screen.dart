@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -108,9 +110,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         suffixIcon: IconButton(
                           onPressed: loading
                               ? null
-                              : () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
-                                ),
+                              : () {
+                                  unawaited(
+                                    ref
+                                        .read(analyticsServiceProvider)
+                                        .trackButton(
+                                          'register_password_visibility_toggle',
+                                          properties: {
+                                            'screen': 'register',
+                                            'component': 'icon_button',
+                                            'action_type': 'toggle',
+                                          },
+                                        ),
+                                  );
+                                  setState(
+                                    () => _obscurePassword = !_obscurePassword,
+                                  );
+                                },
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility_rounded
@@ -133,6 +149,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             GistagButton(
               label: loading ? '가입 중...' : '가입하고 시작하기',
               onPressed: loading ? null : _register,
+              analyticsId: 'register_email_submit',
+              analyticsActionType: 'submit',
             ),
             if (authState.hasError) ...[
               const SizedBox(height: 12),
@@ -144,7 +162,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ],
             const SizedBox(height: 18),
             TextButton(
-              onPressed: loading ? null : () => context.go('/login'),
+              onPressed: loading
+                  ? null
+                  : () {
+                      unawaited(
+                        ref
+                            .read(analyticsServiceProvider)
+                            .trackButton(
+                              'register_login_open',
+                              properties: {
+                                'screen': 'register',
+                                'component': 'text_button',
+                                'action_type': 'navigate',
+                                'destination': '/login',
+                              },
+                            ),
+                      );
+                      context.go('/login');
+                    },
               child: const Text('이미 계정이 있어요'),
             ),
           ],

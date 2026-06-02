@@ -10,12 +10,16 @@ class NfcCtaButton extends StatelessWidget {
     this.size = 168,
     this.showLabel = true,
     this.hapticsEnabled = false,
+    this.analyticsId,
+    this.analyticsProperties = const {},
   });
 
   final VoidCallback onTap;
   final double size;
   final bool showLabel;
   final bool hapticsEnabled;
+  final String? analyticsId;
+  final Map<String, Object?> analyticsProperties;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +28,11 @@ class NfcCtaButton extends StatelessWidget {
         onTap: onTap,
         hapticsEnabled: hapticsEnabled,
         customBorder: const CircleBorder(),
+        analyticsId: analyticsId,
+        analyticsComponent: 'nfc_cta_button',
+        analyticsActionType: 'navigate',
+        analyticsDestination: '/scan',
+        analyticsProperties: analyticsProperties,
         child: Container(
           width: size,
           height: size,

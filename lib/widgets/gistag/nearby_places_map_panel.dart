@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/app_theme.dart';
 import '../../models/gistag_models.dart';
@@ -251,7 +255,22 @@ class _MapTopBar extends StatelessWidget {
               const SizedBox(width: 8),
               IconButton(
                 tooltip: '지도보기',
-                onPressed: onExpand,
+                onPressed: () {
+                  unawaited(
+                    ProviderScope.containerOf(context, listen: false)
+                        .read(analyticsServiceProvider)
+                        .trackButton(
+                          'nearby_map_expand',
+                          properties: {
+                            'screen': _analyticsScreen(context),
+                            'component': 'icon_button',
+                            'action_type': 'navigate',
+                            'destination': '/places-map',
+                          },
+                        ),
+                  );
+                  onExpand?.call();
+                },
                 icon: const Icon(Icons.open_in_full_rounded),
                 color: GistagColors.primary,
                 iconSize: 18,
@@ -359,7 +378,21 @@ class _FloatingPlaceInfo extends StatelessWidget {
             ),
             IconButton(
               tooltip: '닫기',
-              onPressed: onClose,
+              onPressed: () {
+                unawaited(
+                  ProviderScope.containerOf(context, listen: false)
+                      .read(analyticsServiceProvider)
+                      .trackButton(
+                        'nearby_map_place_close',
+                        properties: {
+                          'component': 'icon_button',
+                          'screen': _analyticsScreen(context),
+                          'action_type': 'close',
+                        },
+                      ),
+                );
+                onClose?.call();
+              },
               icon: const Icon(Icons.close_rounded),
               color: GistagColors.mutedText,
               iconSize: 18,
@@ -369,6 +402,14 @@ class _FloatingPlaceInfo extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+String _analyticsScreen(BuildContext context) {
+  try {
+    return GoRouterState.of(context).name ?? 'unknown';
+  } catch (_) {
+    return 'unknown';
   }
 }
 

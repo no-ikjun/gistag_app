@@ -160,6 +160,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             onPressed: _ending || _cancelling || !canFinish
                 ? null
                 : _endWorkout,
+            analyticsId: 'workout_finish',
+            analyticsActionType: 'submit',
           ),
           const SizedBox(height: 10),
           GistagButton(
@@ -167,6 +169,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             onPressed: _ending || _cancelling ? null : _cancelWorkout,
             backgroundColor: Colors.white,
             foregroundColor: GistagColors.text,
+            analyticsId: 'workout_cancel_open_confirm',
+            analyticsActionType: 'open',
           ),
         ],
       ),

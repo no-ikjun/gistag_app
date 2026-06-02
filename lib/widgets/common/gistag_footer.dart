@@ -53,6 +53,8 @@ class GistagFooter extends StatelessWidget {
                   unselectedAsset:
                       'assets/images/footer/ranking_unselected.svg',
                   onTap: () => onSelected(1),
+                  analyticsId: 'footer_ranking_tab',
+                  analyticsTab: 'ranking',
                   iconSize: _iconSize,
                   labelGap: _labelGap,
                 ),
@@ -63,6 +65,8 @@ class GistagFooter extends StatelessWidget {
                   selectedAsset: 'assets/images/footer/home_selected.svg',
                   unselectedAsset: 'assets/images/footer/home_unselected.svg',
                   onTap: () => onSelected(0),
+                  analyticsId: 'footer_home_tab',
+                  analyticsTab: 'home',
                   iconSize: _iconSize,
                   labelGap: _labelGap,
                 ),
@@ -74,6 +78,8 @@ class GistagFooter extends StatelessWidget {
                   unselectedAsset:
                       'assets/images/footer/history_unselected.svg',
                   onTap: () => onSelected(2),
+                  analyticsId: 'footer_history_tab',
+                  analyticsTab: 'history',
                   iconSize: _iconSize,
                   labelGap: _labelGap,
                 ),
@@ -93,6 +99,8 @@ class _FooterItem extends StatelessWidget {
     required this.selectedAsset,
     required this.unselectedAsset,
     required this.onTap,
+    required this.analyticsId,
+    required this.analyticsTab,
     required this.iconSize,
     required this.labelGap,
   });
@@ -102,6 +110,8 @@ class _FooterItem extends StatelessWidget {
   final String selectedAsset;
   final String unselectedAsset;
   final VoidCallback onTap;
+  final String analyticsId;
+  final String analyticsTab;
   final double iconSize;
   final double labelGap;
 
@@ -117,6 +127,10 @@ class _FooterItem extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         scaleDownTo: 0.96,
+        analyticsId: analyticsId,
+        analyticsComponent: 'footer_tab',
+        analyticsActionType: 'navigate',
+        analyticsProperties: {'tab': analyticsTab},
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

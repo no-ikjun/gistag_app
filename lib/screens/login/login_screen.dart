@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -96,9 +98,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         suffixIcon: IconButton(
                           onPressed: loading
                               ? null
-                              : () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
-                                ),
+                              : () {
+                                  unawaited(
+                                    ref
+                                        .read(analyticsServiceProvider)
+                                        .trackButton(
+                                          'login_password_visibility_toggle',
+                                          properties: {
+                                            'screen': 'login',
+                                            'component': 'icon_button',
+                                            'action_type': 'toggle',
+                                          },
+                                        ),
+                                  );
+                                  setState(
+                                    () => _obscurePassword = !_obscurePassword,
+                                  );
+                                },
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility_rounded
@@ -132,7 +148,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ],
             const SizedBox(height: 14),
             TextButton(
-              onPressed: loading ? null : () => context.go('/register'),
+              onPressed: loading
+                  ? null
+                  : () {
+                      unawaited(
+                        ref
+                            .read(analyticsServiceProvider)
+                            .trackButton(
+                              'login_register_open',
+                              properties: {
+                                'screen': 'login',
+                                'component': 'text_button',
+                                'action_type': 'navigate',
+                                'destination': '/register',
+                              },
+                            ),
+                      );
+                      context.go('/register');
+                    },
               style: TextButton.styleFrom(
                 foregroundColor: GistagColors.mutedText,
                 textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -151,6 +184,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ? null
                   : _loginWithInfoteam,
               icon: const Icon(Icons.account_circle_rounded, size: 20),
+              analyticsId: 'login_infoteam_submit',
+              analyticsActionType: 'submit',
             ),
             if (!authConfig.canUseInfoteamLogin) ...[
               const SizedBox(height: 8),
@@ -230,6 +265,9 @@ class _EmailLoginButton extends StatelessWidget {
       child: GistagPressable(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(14),
+        analyticsId: 'login_email_submit',
+        analyticsComponent: 'email_login_button',
+        analyticsActionType: 'submit',
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           height: 52,

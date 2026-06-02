@@ -75,6 +75,9 @@ class _TagSuccessScreenState extends ConsumerState<TagSuccessScreen> {
                 GistagButton(
                   label: '다시 태그하기',
                   onPressed: () => context.go('/scan'),
+                  analyticsId: 'tag_success_rescan_empty',
+                  analyticsActionType: 'navigate',
+                  analyticsDestination: '/scan',
                 ),
               ],
             ),
@@ -119,6 +122,8 @@ class _TagSuccessScreenState extends ConsumerState<TagSuccessScreen> {
               onPressed: starting || resolution?.canStartWorkout != true
                   ? null
                   : _startWorkout,
+              analyticsId: 'tag_success_start_workout',
+              analyticsActionType: 'submit',
             ),
             const SizedBox(height: 10),
             GistagButton(
@@ -126,6 +131,9 @@ class _TagSuccessScreenState extends ConsumerState<TagSuccessScreen> {
               onPressed: starting ? null : () => context.go('/scan'),
               backgroundColor: Colors.white,
               foregroundColor: GistagColors.text,
+              analyticsId: 'tag_success_rescan',
+              analyticsActionType: 'navigate',
+              analyticsDestination: '/scan',
             ),
           ],
         ),

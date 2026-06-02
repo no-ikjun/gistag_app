@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,11 +21,34 @@ class WorkoutResultScreen extends ConsumerStatefulWidget {
 class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
   void _goHome({int tabIndex = 0}) {
     final router = GoRouter.of(context);
+    final previousTab = ref.read(selectedHomeTabProvider);
+    if (tabIndex != previousTab) {
+      unawaited(
+        ref
+            .read(analyticsServiceProvider)
+            .track(
+              'tab_viewed',
+              properties: {
+                'tab': _tabName(tabIndex),
+                'previous_tab': _tabName(previousTab),
+              },
+            ),
+      );
+    }
     ref.read(selectedHomeTabProvider.notifier).state = tabIndex;
     if (!mounted) {
       return;
     }
     router.go('/home');
+  }
+
+  String _tabName(int index) {
+    return switch (index) {
+      0 => 'home',
+      1 => 'ranking',
+      2 => 'history',
+      _ => 'unknown',
+    };
   }
 
   @override
@@ -55,7 +80,15 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
           ),
         ),
         bottomNavigationBar: GistagFixedBottomActions(
-          children: [GistagButton(label: '홈으로 돌아가기', onPressed: _goHome)],
+          children: [
+            GistagButton(
+              label: '홈으로 돌아가기',
+              onPressed: _goHome,
+              analyticsId: 'workout_result_empty_go_home',
+              analyticsActionType: 'navigate',
+              analyticsDestination: '/home',
+            ),
+          ],
         ),
       );
     }
@@ -76,13 +109,22 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
       ),
       bottomNavigationBar: GistagFixedBottomActions(
         children: [
-          GistagButton(label: '홈으로 돌아가기', onPressed: _goHome),
+          GistagButton(
+            label: '홈으로 돌아가기',
+            onPressed: _goHome,
+            analyticsId: 'workout_result_go_home',
+            analyticsActionType: 'navigate',
+            analyticsDestination: '/home',
+          ),
           const SizedBox(height: 10),
           GistagButton(
             label: '내 기록 보기',
             onPressed: () => _goHome(tabIndex: 2),
             backgroundColor: Colors.white,
             foregroundColor: GistagColors.text,
+            analyticsId: 'workout_result_view_history',
+            analyticsActionType: 'navigate',
+            analyticsDestination: 'history_tab',
           ),
         ],
       ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -144,9 +146,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _SectionHeaderRow(
                         title: '최근 나의 기록',
                         actionText: '전체보기',
-                        onActionTap: () =>
-                            ref.read(selectedHomeTabProvider.notifier).state =
-                                2,
+                        analyticsId: 'home_recent_records_view_all',
+                        analyticsDestination: 'history_tab',
+                        onActionTap: () => _selectHomeTab(2),
                       ),
                       const SizedBox(height: 10),
                       if (recentRecord != null)
@@ -161,6 +163,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _SectionHeaderRow(
                         title: '내 주변 운동 장소',
                         actionText: '지도보기',
+                        analyticsId: 'home_nearby_places_view_map',
+                        analyticsDestination: '/places-map',
                         onActionTap: () => context.push('/places-map'),
                       ),
                       const SizedBox(height: 12),
@@ -188,8 +192,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: _HomeBottomDock(
                   onNfcTap: () => _openNfcScan(context),
                   onMapTap: () => context.push('/places-map'),
-                  onHistoryTap: () =>
-                      ref.read(selectedHomeTabProvider.notifier).state = 2,
+                  onHistoryTap: () => _selectHomeTab(2),
                   height: nfcDockHeight,
                 ),
               ),
@@ -202,6 +205,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _openNfcScan(BuildContext context) {
     context.go('/scan');
+  }
+
+  void _selectHomeTab(int index) {
+    final previous = ref.read(selectedHomeTabProvider);
+    if (index != previous) {
+      unawaited(
+        ref
+            .read(analyticsServiceProvider)
+            .track(
+              'tab_viewed',
+              properties: {
+                'tab': _tabName(index),
+                'previous_tab': _tabName(previous),
+              },
+            ),
+      );
+    }
+    ref.read(selectedHomeTabProvider.notifier).state = index;
+  }
+
+  String _tabName(int index) {
+    return switch (index) {
+      0 => 'home',
+      1 => 'ranking',
+      2 => 'history',
+      _ => 'unknown',
+    };
   }
 
   String _displayName(
@@ -256,7 +286,24 @@ class _HomeError extends StatelessWidget {
             children: [
               Text(message, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
-              FilledButton(onPressed: onRetry, child: const Text('다시 시도')),
+              FilledButton(
+                onPressed: () {
+                  unawaited(
+                    ProviderScope.containerOf(context, listen: false)
+                        .read(analyticsServiceProvider)
+                        .trackButton(
+                          'home_retry',
+                          properties: {
+                            'screen': 'home',
+                            'component': 'filled_button',
+                            'action_type': 'retry',
+                          },
+                        ),
+                  );
+                  onRetry();
+                },
+                child: const Text('다시 시도'),
+              ),
             ],
           ),
         ),
@@ -283,7 +330,22 @@ class _HomeHeader extends StatelessWidget {
       children: [
         GistagHeader(
           center: GestureDetector(
-            onLongPress: onLogoLongPress,
+            onLongPress: () {
+              unawaited(
+                ProviderScope.containerOf(context, listen: false)
+                    .read(analyticsServiceProvider)
+                    .trackButton(
+                      'home_logo_admin_long_press',
+                      properties: {
+                        'screen': 'home',
+                        'component': 'logo',
+                        'action_type': 'navigate',
+                        'destination': '/admin/nfc-tags',
+                      },
+                    ),
+              );
+              onLogoLongPress();
+            },
             behavior: HitTestBehavior.opaque,
             child: const AppLogo(width: 104),
           ),
@@ -293,6 +355,10 @@ class _HomeHeader extends StatelessWidget {
             child: GistagPressable(
               onTap: onSettingsTap,
               borderRadius: BorderRadius.circular(10),
+              analyticsId: 'home_settings_open',
+              analyticsComponent: 'icon_button',
+              analyticsActionType: 'navigate',
+              analyticsDestination: '/settings',
               child: const SizedBox(
                 width: 40,
                 height: 40,
@@ -548,11 +614,15 @@ class _SectionHeaderRow extends StatelessWidget {
     required this.title,
     required this.actionText,
     required this.onActionTap,
+    required this.analyticsId,
+    this.analyticsDestination,
   });
 
   final String title;
   final String actionText;
   final VoidCallback onActionTap;
+  final String analyticsId;
+  final String? analyticsDestination;
 
   @override
   Widget build(BuildContext context) {
@@ -571,6 +641,10 @@ class _SectionHeaderRow extends StatelessWidget {
         GistagPressable(
           onTap: onActionTap,
           borderRadius: BorderRadius.circular(10),
+          analyticsId: analyticsId,
+          analyticsComponent: 'text_button',
+          analyticsActionType: 'navigate',
+          analyticsDestination: analyticsDestination,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Text(
@@ -810,6 +884,8 @@ class _WorkoutActionCluster extends StatelessWidget {
                   icon: Icons.map_rounded,
                   label: '지도',
                   onTap: onMapTap,
+                  analyticsId: 'home_dock_map',
+                  analyticsDestination: '/places-map',
                 ),
                 const SizedBox(width: 34),
                 const SizedBox(width: 104),
@@ -818,6 +894,8 @@ class _WorkoutActionCluster extends StatelessWidget {
                   icon: Icons.history_rounded,
                   label: '기록',
                   onTap: onHistoryTap,
+                  analyticsId: 'home_dock_history',
+                  analyticsDestination: 'history_tab',
                 ),
               ],
             ),
@@ -840,6 +918,10 @@ class _PrimaryNfcButton extends StatelessWidget {
       onTap: onTap,
       hapticsEnabled: true,
       customBorder: const CircleBorder(),
+      analyticsId: 'home_nfc_start',
+      analyticsComponent: 'primary_nfc_button',
+      analyticsActionType: 'navigate',
+      analyticsDestination: '/scan',
       child: Container(
         width: 104,
         height: 104,
@@ -870,11 +952,15 @@ class _RoundToolButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    required this.analyticsId,
+    required this.analyticsDestination,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final String analyticsId;
+  final String analyticsDestination;
 
   @override
   Widget build(BuildContext context) {
@@ -884,6 +970,10 @@ class _RoundToolButton extends StatelessWidget {
       child: GistagPressable(
         onTap: onTap,
         customBorder: const CircleBorder(),
+        analyticsId: analyticsId,
+        analyticsComponent: 'round_tool_button',
+        analyticsActionType: 'navigate',
+        analyticsDestination: analyticsDestination,
         child: Container(
           width: 62,
           height: 62,

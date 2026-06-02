@@ -72,6 +72,8 @@ class GistagHeader extends StatelessWidget {
                 iconSize: 24,
                 onTap: onBellTap,
                 semanticLabel: '알림',
+                analyticsId: 'header_notifications',
+                analyticsActionType: 'open',
               )
             : null);
 
@@ -91,6 +93,8 @@ class GistagHeader extends StatelessWidget {
                         iconSize: 22,
                         onTap: onBackTap ?? () => navigateBack(context),
                         semanticLabel: '뒤로',
+                        analyticsId: 'header_back',
+                        analyticsActionType: 'navigate',
                       ),
                     ),
                   Padding(
@@ -117,6 +121,8 @@ class GistagHeader extends StatelessWidget {
                       iconSize: 22,
                       onTap: onBackTap ?? () => navigateBack(context),
                       semanticLabel: '뒤로',
+                      analyticsId: 'header_back',
+                      analyticsActionType: 'navigate',
                     ),
                     const SizedBox(width: 6),
                   ],
@@ -140,6 +146,8 @@ class _HeaderIconButton extends StatelessWidget {
     required this.iconSize,
     this.onTap,
     this.semanticLabel,
+    this.analyticsId,
+    this.analyticsActionType,
   });
 
   static const double buttonSize = 40;
@@ -148,6 +156,8 @@ class _HeaderIconButton extends StatelessWidget {
   final double iconSize;
   final VoidCallback? onTap;
   final String? semanticLabel;
+  final String? analyticsId;
+  final String? analyticsActionType;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +167,9 @@ class _HeaderIconButton extends StatelessWidget {
       child: GistagPressable(
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
+        analyticsId: analyticsId,
+        analyticsComponent: 'header_icon_button',
+        analyticsActionType: analyticsActionType,
         child: SizedBox(
           width: buttonSize,
           height: buttonSize,
