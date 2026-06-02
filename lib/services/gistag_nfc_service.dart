@@ -224,10 +224,7 @@ class NfcManagerGistagNfcService implements GistagNfcService {
 
   @override
   Future<void> stop() async {
-    if (_isUnsupportedPlatform) {
-      return;
-    }
-    await _sessionManager.stopSession();
+    await _stopSessionSilently();
   }
 
   Future<T> _runSession<T>({
@@ -241,12 +238,14 @@ class NfcManagerGistagNfcService implements GistagNfcService {
       throw GistagNfcException(_availabilityMessage(availability));
     }
 
+    await _stopSessionSilently();
+
     final completer = Completer<T>();
     final timer = Timer(timeout, () async {
       if (completer.isCompleted) {
         return;
       }
-      await _sessionManager.stopSession(errorMessageIos: 'NFC 태그를 찾지 못했어요.');
+      await _stopSessionSilently(errorMessageIos: 'NFC 태그를 찾지 못했어요.');
       completer.completeError(
         const GistagNfcException('NFC 태그를 찾지 못했어요.'),
         StackTrace.current,
@@ -258,8 +257,9 @@ class NfcManagerGistagNfcService implements GistagNfcService {
         pollingOptions: _pollingOptions,
         alertMessageIos: alertMessageIos,
         invalidateAfterFirstReadIos: false,
-        onSessionErrorIos: (error) {
+        onSessionErrorIos: (error) async {
           if (!completer.isCompleted) {
+            await _stopSessionSilently(errorMessageIos: error.message);
             completer.completeError(
               GistagNfcException(error.message),
               StackTrace.current,
@@ -272,14 +272,10 @@ class NfcManagerGistagNfcService implements GistagNfcService {
           }
           try {
             final result = await onDiscovered(tag);
-            await _sessionManager.stopSession(
-              alertMessageIos: successMessageIos,
-            );
+            await _stopSessionSilently(alertMessageIos: successMessageIos);
             completer.complete(result);
           } catch (error, stackTrace) {
-            await _sessionManager.stopSession(
-              errorMessageIos: _errorMessage(error),
-            );
+            await _stopSessionSilently(errorMessageIos: _errorMessage(error));
             completer.completeError(error, stackTrace);
           }
         },
@@ -292,6 +288,25 @@ class NfcManagerGistagNfcService implements GistagNfcService {
       return await completer.future;
     } finally {
       timer.cancel();
+      await _stopSessionSilently();
+    }
+  }
+
+  Future<void> _stopSessionSilently({
+    String? alertMessageIos,
+    String? errorMessageIos,
+  }) async {
+    if (_isUnsupportedPlatform) {
+      return;
+    }
+    try {
+      await _sessionManager.stopSession(
+        alertMessageIos: alertMessageIos,
+        errorMessageIos: errorMessageIos,
+      );
+    } catch (_) {
+      // nfc_manager throws if there is no active session. That should not
+      // prevent the next scan from starting.
     }
   }
 
