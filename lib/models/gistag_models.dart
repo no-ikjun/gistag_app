@@ -100,17 +100,45 @@ class Place {
 class NfcTagPlaceDraft {
   const NfcTagPlaceDraft({
     required this.name,
-    required this.description,
-    required this.workoutType,
-    required this.latitude,
-    required this.longitude,
+    this.description,
+    this.workoutType,
+    this.latitude,
+    this.longitude,
+    this.imageUrl,
+    this.distanceText,
+    this.estimatedDurationMinutes,
+    this.sortOrder,
+    this.isRecommended,
   });
 
   final String name;
-  final String description;
-  final String workoutType;
-  final double latitude;
-  final double longitude;
+  final String? description;
+  final String? workoutType;
+  final double? latitude;
+  final double? longitude;
+  final String? imageUrl;
+  final String? distanceText;
+  final int? estimatedDurationMinutes;
+  final int? sortOrder;
+  final bool? isRecommended;
+}
+
+class NfcTagMetadataDraft {
+  const NfcTagMetadataDraft({
+    this.technologies = const [],
+    this.ndefPayload,
+    this.ndefType,
+    this.isWritable,
+    this.maxSizeBytes,
+    this.hardwareUidHash,
+  });
+
+  final List<String> technologies;
+  final String? ndefPayload;
+  final String? ndefType;
+  final bool? isWritable;
+  final int? maxSizeBytes;
+  final String? hardwareUidHash;
 }
 
 class NfcTag {

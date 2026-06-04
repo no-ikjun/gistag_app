@@ -19,8 +19,7 @@ abstract class GistagService {
   Future<NfcTagRegistration> registerNfcTag({
     required String hardwareUid,
     required NfcTagPlaceDraft place,
-    List<String> technologies = const [],
-    String? ndefPayload,
+    NfcTagMetadataDraft metadata = const NfcTagMetadataDraft(),
   });
 
   Future<WorkoutSession?> loadActiveWorkout();

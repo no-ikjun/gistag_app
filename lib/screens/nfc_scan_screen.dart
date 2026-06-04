@@ -28,7 +28,7 @@ class _NfcScanScreenState extends ConsumerState<NfcScanScreen> {
     if (!mounted || resolution == null) {
       return;
     }
-    context.go('/tag-success');
+    context.go('/tag-success', extra: resolution);
   }
 
   @override

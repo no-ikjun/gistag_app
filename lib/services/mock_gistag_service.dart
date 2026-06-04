@@ -115,27 +115,28 @@ class MockGistagService implements GistagService {
   Future<NfcTagRegistration> registerNfcTag({
     required String hardwareUid,
     required NfcTagPlaceDraft place,
-    List<String> technologies = const [],
-    String? ndefPayload,
+    NfcTagMetadataDraft metadata = const NfcTagMetadataDraft(),
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 350));
     final registeredPlace = Place(
       id: 'mock-${DateTime.now().millisecondsSinceEpoch}',
       name: place.name,
-      description: place.description,
-      workoutType: place.workoutType,
+      description: place.description ?? '',
+      workoutType: place.workoutType ?? '운동',
       distance: '0m',
       latitude: place.latitude,
       longitude: place.longitude,
-      distanceText: '등록된 NFC 태그 위치',
+      imageUrl: place.imageUrl,
+      distanceText: place.distanceText ?? '등록된 NFC 태그 위치',
+      estimatedDurationMinutes: place.estimatedDurationMinutes,
       distanceKm: 0,
     );
     return NfcTagRegistration(
       tag: NfcTag(id: 1, code: hardwareUid, status: 'ACTIVE'),
       place: registeredPlace,
       hardwareUid: hardwareUid,
-      technologies: technologies,
-      ndefPayload: ndefPayload,
+      technologies: metadata.technologies,
+      ndefPayload: metadata.ndefPayload,
     );
   }
 

@@ -109,14 +109,12 @@ class NfcManagerGistagNfcService implements GistagNfcService {
       timeout: const Duration(seconds: 30),
       onDiscovered: (tag) async {
         final hardwareUid = _readHardwareUid(tag);
-        final ndef = Ndef.from(tag);
+        if (hardwareUid != null) {
+          return GistagNfcTagRead(hardwareUid: hardwareUid, ndefPayload: null);
+        }
+
+        final ndef = _readNdefTag(tag);
         if (ndef == null) {
-          if (hardwareUid != null) {
-            return GistagNfcTagRead(
-              hardwareUid: hardwareUid,
-              ndefPayload: null,
-            );
-          }
           throw const GistagNfcException('NFC 태그 식별값을 찾지 못했어요.');
         }
 
@@ -130,14 +128,11 @@ class NfcManagerGistagNfcService implements GistagNfcService {
           ndefPayload = null;
         }
 
-        if (hardwareUid == null && ndefPayload == null) {
+        if (ndefPayload == null) {
           throw const GistagNfcException('NFC 태그 식별값을 찾지 못했어요.');
         }
 
-        return GistagNfcTagRead(
-          ndefPayload: ndefPayload,
-          hardwareUid: hardwareUid,
-        );
+        return GistagNfcTagRead(ndefPayload: ndefPayload);
       },
       successMessageIos: '태그를 확인했어요.',
     );
@@ -159,8 +154,9 @@ class NfcManagerGistagNfcService implements GistagNfcService {
     return _runSession<GistagNfcTagWrite>(
       alertMessageIos: '등록할 NFC 태그를 가까이 대주세요.',
       timeout: const Duration(seconds: 30),
+      invalidateAfterFirstReadIos: false,
       onDiscovered: (tag) async {
-        final ndef = Ndef.from(tag);
+        final ndef = _readNdefTag(tag);
         if (ndef == null) {
           final formatted = await _formatAndroidTagIfPossible(
             tag: tag,
@@ -232,6 +228,7 @@ class NfcManagerGistagNfcService implements GistagNfcService {
     required Duration timeout,
     required Future<T> Function(NfcTag tag) onDiscovered,
     required String successMessageIos,
+    bool invalidateAfterFirstReadIos = true,
   }) async {
     final availability = await checkAvailability();
     if (availability != NfcAvailability.enabled) {
@@ -256,7 +253,7 @@ class NfcManagerGistagNfcService implements GistagNfcService {
       await _sessionManager.startSession(
         pollingOptions: _pollingOptions,
         alertMessageIos: alertMessageIos,
-        invalidateAfterFirstReadIos: false,
+        invalidateAfterFirstReadIos: invalidateAfterFirstReadIos,
         onSessionErrorIos: (error) async {
           if (!completer.isCompleted) {
             await _stopSessionSilently(errorMessageIos: error.message);
@@ -369,7 +366,7 @@ class NfcManagerGistagNfcService implements GistagNfcService {
       return false;
     }
 
-    final formatable = NdefFormatableAndroid.from(tag);
+    final formatable = _readNdefFormatableAndroid(tag);
     if (formatable == null) {
       return false;
     }
@@ -388,7 +385,8 @@ class NfcManagerGistagNfcService implements GistagNfcService {
   }
 
   Future<GistagNfcTagInspection> _inspectDiscoveredTag(NfcTag tag) async {
-    final ndef = Ndef.from(tag);
+    final hardwareUid = _readHardwareUid(tag);
+    final ndef = _readNdefTag(tag);
     String? payload;
     String? readError;
 
@@ -398,21 +396,24 @@ class NfcManagerGistagNfcService implements GistagNfcService {
         if (message != null) {
           payload = readGistagPayloadFromNdefMessage(message);
         }
+      } on NfcPayloadFormatException {
+        readError = 'Gistag payload 없음';
       } catch (error) {
-        readError = error is GistagNfcException
-            ? error.message
-            : error.toString();
+        final message = error.toString();
+        readError = message.contains('does not contain any NDEF message')
+            ? 'NDEF 메시지 없음'
+            : 'NDEF payload 읽기 실패';
       }
     }
 
     return GistagNfcTagInspection(
       platform: defaultTargetPlatform.name,
       technologies: _readTechnologies(tag),
-      hardwareUid: _readHardwareUid(tag),
+      hardwareUid: hardwareUid,
       supportsNdef: ndef != null,
       canFormatNdef:
           defaultTargetPlatform == TargetPlatform.android &&
-          NdefFormatableAndroid.from(tag) != null,
+          _readNdefFormatableAndroid(tag) != null,
       ndefWritable: ndef?.isWritable,
       ndefMaxSize: ndef?.maxSize,
       ndefPayload: payload,
@@ -421,48 +422,64 @@ class NfcManagerGistagNfcService implements GistagNfcService {
   }
 
   List<String> _readTechnologies(NfcTag tag) {
-    final androidTag = NfcTagAndroid.from(tag);
+    final androidTag = _tryRead(() => NfcTagAndroid.from(tag));
     if (androidTag != null) {
       return androidTag.techList;
     }
 
     final technologies = <String>[
-      if (Ndef.from(tag) != null) 'NDEF',
-      if (MiFareIos.from(tag) != null) 'MiFare',
-      if (Iso7816Ios.from(tag) != null) 'ISO7816',
-      if (Iso15693Ios.from(tag) != null) 'ISO15693',
-      if (FeliCaIos.from(tag) != null) 'FeliCa',
+      if (_readNdefTag(tag) != null) 'NDEF',
+      if (_tryRead(() => MiFareIos.from(tag)) != null) 'MiFare',
+      if (_tryRead(() => Iso7816Ios.from(tag)) != null) 'ISO7816',
+      if (_tryRead(() => Iso15693Ios.from(tag)) != null) 'ISO15693',
+      if (_tryRead(() => FeliCaIos.from(tag)) != null) 'FeliCa',
     ];
     return technologies.isEmpty ? const ['Unknown'] : technologies;
   }
 
   String? _readHardwareUid(NfcTag tag) {
-    final androidTag = NfcTagAndroid.from(tag);
+    final androidTag = _tryRead(() => NfcTagAndroid.from(tag));
     if (androidTag != null) {
       return _hex(androidTag.id);
     }
 
-    final miFare = MiFareIos.from(tag);
+    final miFare = _tryRead(() => MiFareIos.from(tag));
     if (miFare != null) {
       return _hex(miFare.identifier);
     }
 
-    final iso7816 = Iso7816Ios.from(tag);
+    final iso7816 = _tryRead(() => Iso7816Ios.from(tag));
     if (iso7816 != null) {
       return _hex(iso7816.identifier);
     }
 
-    final iso15693 = Iso15693Ios.from(tag);
+    final iso15693 = _tryRead(() => Iso15693Ios.from(tag));
     if (iso15693 != null) {
       return _hex(iso15693.identifier);
     }
 
-    final feliCa = FeliCaIos.from(tag);
+    final feliCa = _tryRead(() => FeliCaIos.from(tag));
     if (feliCa != null) {
       return _hex(feliCa.currentIDm);
     }
 
     return null;
+  }
+
+  Ndef? _readNdefTag(NfcTag tag) {
+    return _tryRead(() => Ndef.from(tag));
+  }
+
+  NdefFormatableAndroid? _readNdefFormatableAndroid(NfcTag tag) {
+    return _tryRead(() => NdefFormatableAndroid.from(tag));
+  }
+
+  T? _tryRead<T>(T? Function() read) {
+    try {
+      return read();
+    } catch (_) {
+      return null;
+    }
   }
 
   String _hex(Uint8List bytes) {

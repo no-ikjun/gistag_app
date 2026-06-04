@@ -9,7 +9,9 @@ import '../widgets/common/gistag_button.dart';
 import '../widgets/common/gistag_header.dart';
 
 class TagSuccessScreen extends ConsumerStatefulWidget {
-  const TagSuccessScreen({super.key});
+  const TagSuccessScreen({super.key, this.initialResolution});
+
+  final NfcTagResolution? initialResolution;
 
   @override
   ConsumerState<TagSuccessScreen> createState() => _TagSuccessScreenState();
@@ -17,7 +19,9 @@ class TagSuccessScreen extends ConsumerStatefulWidget {
 
 class _TagSuccessScreenState extends ConsumerState<TagSuccessScreen> {
   Future<void> _startWorkout() async {
-    final resolution = ref.read(workoutControllerProvider).value?.resolvedTag;
+    final resolution =
+        ref.read(workoutControllerProvider).value?.resolvedTag ??
+        widget.initialResolution;
     if (resolution == null) {
       context.go('/scan');
       return;
@@ -35,7 +39,8 @@ class _TagSuccessScreenState extends ConsumerState<TagSuccessScreen> {
   @override
   Widget build(BuildContext context) {
     final workoutState = ref.watch(workoutControllerProvider);
-    final resolution = workoutState.value?.resolvedTag;
+    final resolution =
+        workoutState.value?.resolvedTag ?? widget.initialResolution;
     final place = resolution?.place;
     final starting = workoutState.isLoading;
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../models/gistag_models.dart';
 import '../providers/app_providers.dart';
 import '../screens/active_workout_screen.dart';
 import '../screens/home_shell_screen.dart';
@@ -114,7 +115,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: AppRouteNames.tagSuccess,
         path: '/tag-success',
-        builder: (context, state) => const TagSuccessScreen(),
+        builder: (context, state) => TagSuccessScreen(
+          initialResolution: state.extra is NfcTagResolution
+              ? state.extra as NfcTagResolution
+              : null,
+        ),
       ),
       GoRoute(
         name: AppRouteNames.workout,

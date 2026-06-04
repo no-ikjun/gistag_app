@@ -121,25 +121,15 @@ class ApiGistagService implements GistagService {
   Future<NfcTagRegistration> registerNfcTag({
     required String hardwareUid,
     required NfcTagPlaceDraft place,
-    List<String> technologies = const [],
-    String? ndefPayload,
+    NfcTagMetadataDraft metadata = const NfcTagMetadataDraft(),
   }) async {
     final data = await _requestJson(() {
       return _dio.post<dynamic>(
         '/admin/nfc-tags/register',
         data: {
           'hardwareUid': hardwareUid,
-          'tagMetadata': {
-            'technologies': technologies,
-            if (ndefPayload != null) 'ndefPayload': ndefPayload,
-          },
-          'place': {
-            'name': place.name,
-            'description': place.description,
-            'workoutType': place.workoutType,
-            'latitude': place.latitude,
-            'longitude': place.longitude,
-          },
+          'tagMetadata': _metadataRequest(metadata),
+          'place': _placeRegistrationRequest(place),
         },
       );
     });
@@ -314,17 +304,55 @@ class ApiGistagService implements GistagService {
     }
   }
 
+  Map<String, dynamic> _placeRegistrationRequest(NfcTagPlaceDraft place) {
+    return {
+      'name': place.name,
+      if (_hasText(place.description)) 'description': place.description!.trim(),
+      if (_hasText(place.workoutType)) 'workoutType': place.workoutType!.trim(),
+      if (place.latitude != null) 'latitude': place.latitude,
+      if (place.longitude != null) 'longitude': place.longitude,
+      if (_hasText(place.imageUrl)) 'imageUrl': place.imageUrl!.trim(),
+      if (_hasText(place.distanceText))
+        'distanceText': place.distanceText!.trim(),
+      if (place.estimatedDurationMinutes != null)
+        'estimatedDurationMinutes': place.estimatedDurationMinutes,
+      if (place.sortOrder != null) 'sortOrder': place.sortOrder,
+      if (place.isRecommended != null) 'isRecommended': place.isRecommended,
+    };
+  }
+
+  Map<String, dynamic> _metadataRequest(NfcTagMetadataDraft metadata) {
+    return {
+      if (metadata.technologies.isNotEmpty)
+        'technologies': metadata.technologies,
+      if (_hasText(metadata.ndefPayload))
+        'ndefPayload': metadata.ndefPayload!.trim(),
+      if (_hasText(metadata.ndefType)) 'ndefType': metadata.ndefType!.trim(),
+      if (metadata.isWritable != null) 'isWritable': metadata.isWritable,
+      if (metadata.maxSizeBytes != null) 'maxSizeBytes': metadata.maxSizeBytes,
+      if (_hasText(metadata.hardwareUidHash))
+        'hardwareUidHash': metadata.hardwareUidHash!.trim(),
+    };
+  }
+
   NfcTagResolution _parseResolution(Map<String, dynamic> data) {
     final tag = _asMap(data['tag']);
     final place = _asMap(data['place']);
+    final tagCode = _asString(
+      tag['code'],
+      fallback: _asString(
+        tag['tagCode'],
+        fallback: _asString(tag['hardwareUid']),
+      ),
+    );
     return NfcTagResolution(
       tag: NfcTag(
         id: _asInt(tag['id']),
-        code: _asString(tag['code']),
-        status: _asString(tag['status']),
+        code: tagCode,
+        status: _asString(tag['status'], fallback: 'ACTIVE'),
       ),
       place: _parsePlace(place),
-      canStartWorkout: data['canStartWorkout'] == true,
+      canStartWorkout: data['canStartWorkout'] != false,
       blockedReason: data['blockedReason'] as String?,
     );
   }
@@ -510,6 +538,10 @@ class ApiGistagService implements GistagService {
       return fallback;
     }
     return value.toString();
+  }
+
+  bool _hasText(String? value) {
+    return value != null && value.trim().isNotEmpty;
   }
 
   String _formatDistance(double? distanceKm, String? distanceText) {

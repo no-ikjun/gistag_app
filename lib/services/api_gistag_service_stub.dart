@@ -31,8 +31,7 @@ class ApiGistagService implements GistagService {
   Future<NfcTagRegistration> registerNfcTag({
     required String hardwareUid,
     required NfcTagPlaceDraft place,
-    List<String> technologies = const [],
-    String? ndefPayload,
+    NfcTagMetadataDraft metadata = const NfcTagMetadataDraft(),
   }) async => throw _unsupported;
 
   @override
