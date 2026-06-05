@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_theme.dart';
 import '../../models/gistag_models.dart';
+import '../common/gistag_pressable.dart';
 
 class WorkoutRecordCard extends StatelessWidget {
-  const WorkoutRecordCard({required this.record, super.key});
+  const WorkoutRecordCard({required this.record, super.key, this.onTap});
 
   final WorkoutRecord record;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+    final card = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -80,6 +81,17 @@ class WorkoutRecordCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: onTap == null
+          ? card
+          : GistagPressable(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(18),
+              child: card,
+            ),
     );
   }
 

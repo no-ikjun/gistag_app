@@ -87,11 +87,201 @@ class _HistoryContent extends StatelessWidget {
           style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18),
         ),
         const SizedBox(height: 12),
-        for (final record in records) WorkoutRecordCard(record: record),
+        for (final record in records)
+          WorkoutRecordCard(
+            record: record,
+            onTap: () => _showRecordDetail(context, record),
+          ),
       ],
     );
   }
 }
+
+void _showRecordDetail(BuildContext context, WorkoutRecord record) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => _WorkoutRecordDetailSheet(record: record),
+  );
+}
+
+class _WorkoutRecordDetailSheet extends StatelessWidget {
+  const _WorkoutRecordDetailSheet({required this.record});
+
+  final WorkoutRecord record;
+
+  @override
+  Widget build(BuildContext context) {
+    final finishedAt = record.startedAt.add(record.duration);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(24, 12, 24, 26 + bottomInset),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(
+                color: GistagColors.border,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: GistagColors.primarySoft.withValues(alpha: 0.30),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.fitness_center_rounded,
+                  color: GistagColors.primaryDark,
+                  size: 25,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      record.placeName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge?.copyWith(fontSize: 20),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      record.workoutType,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close_rounded),
+                color: GistagColors.mutedText,
+                tooltip: '닫기',
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          _RecordDetailRow(
+            icon: Icons.calendar_month_rounded,
+            label: '운동 시작',
+            value: _formatFullDate(record.startedAt),
+          ),
+          _RecordDetailRow(
+            icon: Icons.flag_rounded,
+            label: '운동 종료',
+            value: _formatFullDate(finishedAt),
+          ),
+          _RecordDetailRow(
+            icon: Icons.timer_outlined,
+            label: '운동 시간',
+            value: _formatDuration(record.duration),
+          ),
+          _RecordDetailRow(
+            icon: Icons.bolt_rounded,
+            label: '획득 XP',
+            value: '+${record.earnedXp} XP',
+            accent: GistagColors.xp,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecordDetailRow extends StatelessWidget {
+  const _RecordDetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.accent = GistagColors.primary,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: GistagColors.border)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: accent, size: 20),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: GistagColors.mutedText,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _formatFullDate(DateTime date) {
+  return '${date.year}.${_twoDigits(date.month)}.${_twoDigits(date.day)} ${_twoDigits(date.hour)}:${_twoDigits(date.minute)}';
+}
+
+String _formatDuration(Duration duration) {
+  if (duration.inSeconds < 60) {
+    return '${duration.inSeconds}초';
+  }
+
+  final minutes = duration.inMinutes;
+  final hours = minutes ~/ 60;
+  final remainingMinutes = minutes % 60;
+
+  if (hours == 0) {
+    return '$minutes분';
+  }
+  if (remainingMinutes == 0) {
+    return '$hours시간';
+  }
+  return '$hours시간 $remainingMinutes분';
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
 class _HistorySummary extends StatelessWidget {
   const _HistorySummary({
