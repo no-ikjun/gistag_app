@@ -29,41 +29,45 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
     final rankingState = ref.watch(rankingControllerProvider);
 
     return SafeArea(
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          final metrics = notification.metrics;
-          if (metrics.extentAfter < 260) {
-            ref.read(rankingControllerProvider.notifier).loadMore();
-          }
-          return false;
-        },
-        child: ListView(
-          physics: const ClampingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
-          children: [
-            const AppLogo(width: 110),
-            const SizedBox(height: 28),
-            Text('랭킹', style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            Text(
-              '전체 누적 XP 기준으로 순위를 확인할 수 있어요.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 22),
-            rankingState.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.only(top: 80),
-                child: Center(child: CircularProgressIndicator()),
+      child: RefreshIndicator(
+        onRefresh: () =>
+            ref.read(rankingControllerProvider.notifier).load(force: true),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            final metrics = notification.metrics;
+            if (metrics.extentAfter < 260) {
+              ref.read(rankingControllerProvider.notifier).loadMore();
+            }
+            return false;
+          },
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+            children: [
+              const AppLogo(width: 110),
+              const SizedBox(height: 28),
+              Text('랭킹', style: Theme.of(context).textTheme.headlineMedium),
+              const SizedBox(height: 8),
+              Text(
+                '전체 누적 XP 기준으로 순위를 확인할 수 있어요.',
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
-              error: (error, _) => _ListError(
-                message: '랭킹을 불러오지 못했어요.',
-                onRetry: () => ref
-                    .read(rankingControllerProvider.notifier)
-                    .load(force: true),
+              const SizedBox(height: 22),
+              rankingState.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.only(top: 80),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (error, _) => _ListError(
+                  message: '랭킹을 불러오지 못했어요.',
+                  onRetry: () => ref
+                      .read(rankingControllerProvider.notifier)
+                      .load(force: true),
+                ),
+                data: (ranking) => _RankingContent(ranking: ranking),
               ),
-              data: (ranking) => _RankingContent(ranking: ranking),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
